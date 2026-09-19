@@ -74,7 +74,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Crisp, High-Definition Vegetable Background (Max Visibility, Zero Blur) */
+/* Crisp Vegetable Background with Very Minute Blur for Subtle Softness */
 body::before {
   content: '';
   position: fixed;
@@ -84,6 +84,8 @@ body::before {
   bottom: 0;
   z-index: -1;
   background: url('./assets/fresh_vegetables_bg.png') no-repeat center center / cover;
+  filter: blur(1.5px);
+  transform: scale(1.01);
   pointer-events: none;
 }
 

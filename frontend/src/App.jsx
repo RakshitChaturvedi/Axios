@@ -274,24 +274,26 @@ export default function App() {
       {/* ================================================================ */}
       {/* PAGE 1: CORE SPOILAGE FACTORS (DEDICATED VIEW)                   */}
       {/* ================================================================ */}
+      {/* ================================================================ */}
+      {/* PAGE 1: CORE SPOILAGE FACTORS (DEDICATED VIEW)                   */}
+      {/* ================================================================ */}
       {activeTab === 'factors' && (
         <div className="page-view animate-fade-in">
           <section className="factors-section">
-            {/* Top Grid: Spoilage Risk Score (Hero Centerpiece) & Remaining Shelf Life */}
-            <div className="factors-hero-grid">
-              {/* Spoilage Risk Score (Centerpiece Hero Card with Translucent Dynamic Color) */}
-              <div className={getRiskCardClass()}>
-                <div>
-                  <div className="factor-card-title">
+            {/* LEVEL 1: Spoilage Risk Score (Centered Hero Card in Middle) */}
+            <div className="factor-center-wrapper">
+              <div className={`factor-card-center-hero ${getRiskCardClass()}`}>
+                <div className="hero-center-content">
+                  <div className="factor-card-title-center">
                     <span>Spoilage Risk Score</span>
-                    {isSpoiled ? <AlertOctagon size={20} /> : isWatch ? <AlertTriangle size={20} /> : <ShieldCheck size={20} />}
+                    {isSpoiled ? <AlertOctagon size={22} /> : isWatch ? <AlertTriangle size={22} /> : <ShieldCheck size={22} />}
                   </div>
 
-                  <div className="risk-metric-big">
+                  <div className="risk-metric-hero-big">
                     {Math.round(riskScore * 100)}%
                   </div>
 
-                  <div className="card-meta-text">
+                  <div className="card-meta-text-center">
                     {isSpoiled 
                       ? `The food is spoiled. Spoilage risk has reached ${Math.round(riskScore * 100)}%. It is no longer safe to eat or sell.`
                       : isWatch 
@@ -299,15 +301,18 @@ export default function App() {
                       : `The food is fresh and safe to eat. There is an ${Math.round(riskScore * 100)}% risk that it is spoiled.`
                     }
                   </div>
-                </div>
 
-                <div className="card-hero-footer">
-                  <span>Status:</span>
-                  <strong>{isSpoiled ? "Spoiled" : isWatch ? "Needs Attention" : "Fresh & Safe"}</strong>
+                  <div className="card-hero-status-pill">
+                    <span>Status:</span>
+                    <strong>{isSpoiled ? "Spoiled" : isWatch ? "Needs Attention" : "Fresh & Safe"}</strong>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Remaining Useful Shelf Life (Cool Blue Accent Card) */}
+            {/* LEVEL 2: Remaining Useful Shelf Life & Degradation Velocity (Below Hero) */}
+            <div className="factors-mid-grid">
+              {/* Remaining Useful Shelf Life */}
               <div className="factor-card factor-card-shelflife">
                 <div>
                   <div className="factor-card-title">
@@ -346,72 +351,54 @@ export default function App() {
                   <strong>Becomes unsafe when risk crosses 80%</strong>
                 </div>
               </div>
-            </div>
 
-            {/* Middle Section: Degradation Velocity (Dedicated Graph + Condition Scenarios) */}
-            <div className="factor-card factor-card-velocity" style={{ marginTop: '20px' }}>
-              <div className="factor-card-title">
-                <span style={{ color: '#b45309' }}>Degradation Velocity</span>
-                <Activity size={18} color="#d97706" />
-              </div>
-
-              <div className="velocity-top-flex">
+              {/* Degradation Velocity (Strictly Black & White Card, No Graph) */}
+              <div className="factor-card factor-card-velocity-bw">
                 <div>
+                  <div className="factor-card-title">
+                    <span style={{ color: '#000000' }}>Degradation Velocity</span>
+                    <Activity size={18} color="#000000" />
+                  </div>
+
                   <div className="velocity-readout-row">
                     <span className="velocity-number">
                       {degradationVelocity.toFixed(3)}
                     </span>
                     <span className="velocity-unit">ticks/sec</span>
-                    <span className="velocity-status-amber">
+                    <span className="velocity-status-bw">
                       {Math.abs(degradationVelocity) > 0.1 ? 'Spoiling Fast' : 'Aging Slowly & Steady'}
                     </span>
                   </div>
-                  <div className="card-meta-text">
-                    Shows how fast the food is breaking down right now based on gas and heat trends.
+
+                  <div className="card-meta-text" style={{ marginBottom: '14px' }}>
+                    Shows how fast the food is breaking down right now based on temperature and gas readings.
+                  </div>
+
+                  {/* Clean Black & White Scenarios */}
+                  <div className="scenario-list-bw">
+                    <div className="scenario-item-bw">
+                      <Snowflake size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span><strong>In Fridge (4°C):</strong> Spoilage slows down by ~78%, lasting up to 5x longer.</span>
+                    </div>
+                    <div className="scenario-item-bw">
+                      <Leaf size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span><strong>Room Temperature:</strong> Follows standard steady aging rate.</span>
+                    </div>
+                    <div className="scenario-item-bw">
+                      <SunMedium size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span><strong>In Heat (&gt;35°C):</strong> Spoilage speeds up 3x and spoils in 4 to 6 hours.</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Embedded Velocity Sparkline Graph */}
-                <div className="velocity-chart-container">
-                  <div className="velocity-chart-header">
-                    <span>Aging Speed Curve (Live Trend)</span>
-                    <span className="velocity-chart-tag">{degradationVelocity.toFixed(3)} / sec</span>
-                  </div>
-                  <div className="velocity-svg-wrapper">
-                    {renderSVGChart(velocityHistory, '#d97706')}
-                  </div>
-                </div>
-              </div>
-
-              {/* Conditions & Forecast Scenarios */}
-              <div className="scenario-grid-3">
-                <div className="scenario-card scenario-card-cold">
-                  <div className="scenario-card-head">
-                    <Snowflake size={16} color="#0284c7" />
-                    <strong>Kept in Fridge (4°C)</strong>
-                  </div>
-                  <p>Spoilage slows down drastically (~78%). Stays fresh up to <strong>5 times longer</strong>.</p>
-                </div>
-
-                <div className="scenario-card scenario-card-current">
-                  <div className="scenario-card-head">
-                    <Leaf size={16} color="#15803d" />
-                    <strong>Current Conditions ({sensor.temperature_c.toFixed(1)}°C)</strong>
-                  </div>
-                  <p>Ages steadily at normal speed. Follow the remaining shelf life estimate.</p>
-                </div>
-
-                <div className="scenario-card scenario-card-hot">
-                  <div className="scenario-card-head">
-                    <SunMedium size={16} color="#b91c1c" />
-                    <strong>If Left in Heat (&gt;35°C)</strong>
-                  </div>
-                  <p>Spoilage accelerates fast (3x). Will spoil within <strong>4 to 6 hours</strong>.</p>
+                <div className="card-footer-subtle">
+                  <span>Aging Speed:</span>
+                  <strong>{Math.abs(degradationVelocity) > 0.1 ? 'Accelerated' : 'Slow & Normal'}</strong>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Section: Thermal vs. Biochemical Risk (At Last, with Vibrant Color Meters) */}
+            {/* LEVEL 3: Thermal vs. Biochemical Risk (At Last, with Vibrant Color Meters) */}
             <div className="factor-card factor-card-risks" style={{ marginTop: '20px' }}>
               <div className="factor-card-title">
                 <span style={{ color: '#047857' }}>Thermal vs. Biochemical Risk</span>
@@ -460,51 +447,6 @@ export default function App() {
                   {bioRisk > thermalRisk ? "Rotting gas buildup from aging" : "Heat exposure from warm storage"}
                 </strong>
               </div>
-            </div>
-          </section>
-
-          {/* SECTION 4: INTERACTIVE CONTROLS & LIVE SIMULATION */}
-          <section className="interactive-toolbar">
-            <div className="toolbar-header-flex">
-              <div className="toolbar-title">
-                <Sliders size={18} color="#000000" />
-                <span>Interactive Scenarios &amp; Live Simulation</span>
-              </div>
-
-              <div className="preset-button-row">
-                <button className="action-btn" onClick={() => applyPreset('fresh')}>
-                  <span>Fresh Food (12% Risk)</span>
-                </button>
-                <button className="action-btn" onClick={() => applyPreset('watch')}>
-                  <span>Warning Level (48% Risk)</span>
-                </button>
-                <button className="action-btn" onClick={() => applyPreset('spoiled')}>
-                  <span>Spoiled Food (89% Risk)</span>
-                </button>
-                <button className="action-btn" onClick={fetchLiveStatus} title="Sync with live stream">
-                  <RefreshCw size={13} />
-                  <span>Reset / Live Sync</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Live Interactive Temperature Slider */}
-            <div className="interactive-slider-row">
-              <span className="slider-label">
-                Simulate Temperature Change:
-              </span>
-              <input 
-                type="range" 
-                min="4" 
-                max="42" 
-                step="0.5"
-                value={sensor.temperature_c}
-                onChange={(e) => handleTempSlider(e.target.value)}
-                className="slider-input" 
-              />
-              <span className="slider-value-display">
-                {sensor.temperature_c.toFixed(1)}°C
-              </span>
             </div>
           </section>
         </div>
