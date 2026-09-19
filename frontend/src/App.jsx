@@ -8,35 +8,31 @@ import {
   Wind, 
   Clock, 
   Radio, 
-  Flame, 
   Leaf, 
-  Cpu, 
   Activity, 
   RefreshCw, 
   Snowflake,
   SunMedium,
+  Sliders,
   Layers,
-  ArrowUpRight,
-  TrendingDown,
-  Info
+  ArrowRight
 } from 'lucide-react';
 import './App.css';
 
 const API_BASE = 'http://localhost:8080';
 
 export default function App() {
-  const [deviceId, setDeviceId] = useState('FreshTrace-Node-01');
+  const [deviceId] = useState('FreshTrace-Node-01');
   const [foodType, setFoodType] = useState('tomato');
-  const [isLive, setIsLive] = useState(true);
 
-  // Core Intelligence State
-  const [riskScore, setRiskScore] = useState(0.18); // 0.0 to 1.0
+  // Core Intelligence Values
+  const [riskScore, setRiskScore] = useState(0.18);
   const [rulHours, setRulHours] = useState(24.5);
   const [bioRisk, setBioRisk] = useState(0.18);
   const [thermalRisk, setThermalRisk] = useState(0.12);
-  const [degradationVelocity, setDegradationVelocity] = useState(-0.015); // ticks/sec
+  const [degradationVelocity, setDegradationVelocity] = useState(-0.015);
 
-  // Sensor state (matching requested specs)
+  // Exact Sensor Metrics
   const [sensor, setSensor] = useState({
     voc_raw: 31555,
     nox_raw: 19601,
@@ -44,16 +40,16 @@ export default function App() {
     humidity_pct: 67.9
   });
 
-  // Rolling history for curves
+  // Rolling History for Curves
   const [vocHistory, setVocHistory] = useState([
-    31700, 31680, 31650, 31620, 31600, 31580, 31560, 31555
+    31720, 31690, 31660, 31630, 31600, 31580, 31560, 31555
   ]);
   const [tempHistory, setTempHistory] = useState([
     29.4, 29.6, 29.8, 30.0, 30.1, 30.1, 30.2, 30.2
   ]);
 
-  // Fetch real-time data from backend API
-  const fetchStatus = async () => {
+  // Fetch live state from backend API (connected to AWS IoT Core + RDS)
+  const fetchLiveStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/devices/${deviceId}/status`);
       if (res.ok) {
@@ -68,112 +64,146 @@ export default function App() {
           setRulHours(data.remaining_useful_life.hours ?? 24.5);
         }
         if (data.sensor) {
+          const newTemp = data.sensor.temperature_c || 30.2;
+          const newVoc = data.sensor.voc_raw || 31555;
           setSensor({
-            voc_raw: data.sensor.voc_raw || 31555,
+            voc_raw: newVoc,
             nox_raw: data.sensor.nox_raw || 19601,
-            temperature_c: data.sensor.temperature_c || 30.2,
+            temperature_c: newTemp,
             humidity_pct: data.sensor.humidity_pct || 67.9
           });
-          setVocHistory(prev => [...prev.slice(-15), data.sensor.voc_raw || 31555]);
-          setTempHistory(prev => [...prev.slice(-15), data.sensor.temperature_c || 30.2]);
+          setVocHistory(prev => [...prev.slice(-15), newVoc]);
+          setTempHistory(prev => [...prev.slice(-15), newTemp]);
         }
       }
     } catch (e) {
-      // Backend polling error; continue seamlessly
+      // Backend polling fallback
     }
   };
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 3000);
+    fetchLiveStatus();
+    const interval = setInterval(fetchLiveStatus, 4000);
     return () => clearInterval(interval);
   }, [deviceId]);
 
-  // Determine Spoilage Risk Card Class (turns fully Green, Amber, or Red)
+  // Card 1 Dynamic Style: Turns fully Green, Amber, or Red
   const isSpoiled = riskScore >= 0.80;
   const isWatch = riskScore >= 0.30 && riskScore < 0.80;
 
   const getRiskCardClass = () => {
-    if (isSpoiled) return 'factor-card risk-card-spoiled';
-    if (isWatch) return 'factor-card risk-card-watch';
-    return 'factor-card risk-card-fresh';
+    if (isSpoiled) return 'factor-card card-red-spoiled';
+    if (isWatch) return 'factor-card card-amber-watch';
+    return 'factor-card card-green-fresh';
   };
 
-  // Interactive Simulators for Instant Demos
+  // Interactive Temperature Slider calculation (Arrhenius kinetic live simulation)
+  const handleTempSlider = (newTemp) => {
+    const t = parseFloat(newTemp);
+    // Arrhenius relative rate calculation
+    const ea = 85000;
+    const r = 8.314;
+    const tKelvin = t + 273.15;
+    const tRefKelvin = 4.0 + 273.15;
+    const rateMultiplier = Math.exp(-(ea / r) * ((1.0 / tKelvin) - (1.0 / tRefKelvin)));
+    const calculatedThermal = Math.min(1.0, Math.max(0.02, (rateMultiplier * 0.05)));
+
+    const newOverall = Math.max(bioRisk, calculatedThermal);
+    setThermalRisk(calculatedThermal);
+    setRiskScore(newOverall);
+
+    // Adjust velocity based on temperature
+    const vel = -0.010 * (t / 25.0);
+    setDegradationVelocity(vel);
+
+    // Recalculate remaining hours
+    if (newOverall >= 0.80) {
+      setRulHours(0.0);
+    } else {
+      const remaining = Math.max(1.0, (0.85 - newOverall) / (Math.abs(vel) * 0.08));
+      setRulHours(remaining);
+    }
+
+    setSensor(prev => ({ ...prev, temperature_c: t }));
+    setTempHistory(prev => [...prev.slice(-15), t]);
+  };
+
+  // Quick Preset Scenarios for Demonstrations
   const applyPreset = (preset) => {
     if (preset === 'fresh') {
       setRiskScore(0.12);
-      setRulHours(36.0);
+      setRulHours(42.0);
       setBioRisk(0.10);
       setThermalRisk(0.08);
-      setDegradationVelocity(-0.005);
-      setSensor({ voc_raw: 31800, nox_raw: 19800, temperature_c: 28.5, humidity_pct: 65.0 });
+      setDegradationVelocity(-0.008);
+      setSensor({ voc_raw: 31800, nox_raw: 19800, temperature_c: 28.5, humidity_pct: 66.0 });
       setVocHistory(prev => [...prev.slice(-15), 31800]);
-    } else if (preset === 'heat') {
-      setRiskScore(0.55);
-      setRulHours(14.0);
+      setTempHistory(prev => [...prev.slice(-15), 28.5]);
+    } else if (preset === 'watch') {
+      setRiskScore(0.48);
+      setRulHours(14.5);
       setBioRisk(0.35);
-      setThermalRisk(0.55);
-      setDegradationVelocity(-0.120);
-      setSensor({ voc_raw: 30800, nox_raw: 19200, temperature_c: 36.8, humidity_pct: 74.0 });
+      setThermalRisk(0.48);
+      setDegradationVelocity(-0.140);
+      setSensor({ voc_raw: 30800, nox_raw: 19100, temperature_c: 35.5, humidity_pct: 73.0 });
       setVocHistory(prev => [...prev.slice(-15), 30800]);
-      setTempHistory(prev => [...prev.slice(-15), 36.8]);
-    } else if (preset === 'spoil') {
+      setTempHistory(prev => [...prev.slice(-15), 35.5]);
+    } else if (preset === 'spoiled') {
       setRiskScore(0.89);
       setRulHours(0.0);
       setBioRisk(0.89);
-      setThermalRisk(0.40);
-      setDegradationVelocity(-0.450);
-      setSensor({ voc_raw: 28200, nox_raw: 16500, temperature_c: 32.5, humidity_pct: 78.5 });
-      setVocHistory(prev => [...prev.slice(-15), 28200]);
+      setThermalRisk(0.42);
+      setDegradationVelocity(-0.480);
+      setSensor({ voc_raw: 27800, nox_raw: 16200, temperature_c: 32.0, humidity_pct: 79.0 });
+      setVocHistory(prev => [...prev.slice(-15), 27800]);
     }
   };
 
-  // SVG Sparkline Helper
-  const renderSVGChart = (data, color, unit, minVal, maxVal) => {
+  // Mathematically Scaled SVG Sparkline
+  const renderSVGChart = (data, strokeColor, minBound, maxBound) => {
     if (!data || data.length < 2) return null;
-    const min = minVal ?? (Math.min(...data) * 0.99);
-    const max = maxVal ?? (Math.max(...data) * 1.01);
+    const min = minBound ?? (Math.min(...data) * 0.995);
+    const max = maxBound ?? (Math.max(...data) * 1.005);
     const range = (max - min) === 0 ? 1 : (max - min);
 
-    const width = 480;
+    const width = 500;
     const height = 140;
-    const padding = 16;
+    const pad = 12;
 
     const points = data.map((val, idx) => {
-      const x = padding + (idx / (data.length - 1)) * (width - 2 * padding);
-      const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+      const x = pad + (idx / (data.length - 1)) * (width - 2 * pad);
+      const y = height - pad - ((val - min) / range) * (height - 2 * pad);
       return `${x},${y}`;
     }).join(' ');
 
     return (
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
         <defs>
-          <linearGradient id={`grad-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+          <linearGradient id={`grad-${strokeColor}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
           </linearGradient>
         </defs>
         <polygon 
-          fill={`url(#grad-${color})`} 
-          points={`${padding},${height - padding} ${points} ${width - padding},${height - padding}`} 
+          fill={`url(#grad-${strokeColor})`} 
+          points={`${pad},${height - pad} ${points} ${width - pad},${height - pad}`} 
         />
         <polyline
           fill="none"
-          stroke={color}
-          strokeWidth="3.2"
+          stroke={strokeColor}
+          strokeWidth="2.8"
           strokeLinecap="round"
           strokeLinejoin="round"
           points={points}
         />
         {data.length > 0 && (
           <circle
-            cx={width - padding}
-            cy={height - padding - ((data[data.length - 1] - min) / range) * (height - 2 * padding)}
-            r="5.5"
-            fill={color}
+            cx={width - pad}
+            cy={height - pad - ((data[data.length - 1] - min) / range) * (height - 2 * pad)}
+            r="4.5"
+            fill={strokeColor}
             stroke="#ffffff"
-            strokeWidth="2.5"
+            strokeWidth="2"
           />
         )}
       </svg>
@@ -181,31 +211,23 @@ export default function App() {
   };
 
   return (
-    <div className="page-wrapper">
-      {/* Minimalist Organic Header */}
-      <header className="app-header">
-        <div className="brand-wrapper">
-          <div className="brand-icon-box">
-            <Leaf size={24} />
+    <div className="app-viewport">
+      {/* Clean, Non-Generic Header */}
+      <header className="brand-header">
+        <div className="brand-left">
+          <div className="brand-emblem">
+            <Leaf size={22} />
           </div>
-          <div>
-            <div className="brand-name">Axios</div>
-            <div className="brand-descriptor">Real-Time Biochemical Spoilage Intelligence Platform</div>
+          <div className="brand-title-group">
+            <h1>Axios</h1>
+            <div className="brand-subtitle">Real-Time Biochemical Spoilage Intelligence Platform</div>
           </div>
         </div>
 
-        <div className="header-controls">
-          <div className="produce-selector">
-            <span>Produce Profile:</span>
-            <select value={foodType} onChange={(e) => setFoodType(e.target.value)}>
-              <option value="tomato">🍅 Vine Tomato</option>
-              <option value="paneer">🧀 Fresh Artisan Paneer</option>
-            </select>
-          </div>
-
-          <div className="live-indicator-pill">
-            <span className="dot-pulse" />
-            <span>AWS IoT Core Active</span>
+        <div className="header-status-group">
+          <div className="live-pill">
+            <span className="live-dot" />
+            <span>AWS IoT Core Active · {deviceId}</span>
           </div>
         </div>
       </header>
@@ -213,172 +235,168 @@ export default function App() {
       {/* ================================================================ */}
       {/* SECTION 1: THE 5 PRIMARY CORE FACTORS (CLEARLY VISIBLE FIRST)    */}
       {/* ================================================================ */}
-      <section className="primary-factors-section">
-        <div className="section-label-bar">
-          <div className="section-title">
-            <Activity size={20} color="#15803d" />
-            <span>Core Spoilage Intelligence</span>
-          </div>
-          <div className="section-subtext">Real-time inference computed from multi-sensor biochemical engine</div>
+      <section className="factors-section">
+        <div className="section-headline">
+          <Activity size={18} color="#15803d" />
+          <span>Core Spoilage Factors</span>
         </div>
 
-        <div className="top-factors-grid">
+        <div className="factors-grid-2x2">
           {/* FACTOR 1: Spoilage Risk Score (Card turns fully Green or Red) */}
           <div className={getRiskCardClass()}>
             <div>
-              <div className="factor-header-row">
-                <span className="factor-label">1. Spoilage Risk Score</span>
-                {isSpoiled ? <AlertOctagon size={22} /> : isWatch ? <AlertTriangle size={22} /> : <ShieldCheck size={22} />}
+              <div className="factor-card-title">
+                <span>1. Spoilage Risk Score</span>
+                {isSpoiled ? <AlertOctagon size={20} /> : isWatch ? <AlertTriangle size={20} /> : <ShieldCheck size={20} />}
               </div>
 
-              <div className="risk-score-huge">
+              <div className="risk-metric-big">
                 {Math.round(riskScore * 100)}%
               </div>
 
-              <div className="factor-caption">
+              <div className="card-meta-text">
                 {isSpoiled 
-                  ? "CRITICAL: Food is Spoiled — Microbial breakdown threshold exceeded."
+                  ? "CRITICAL: Food is Spoiled — Decomposition threshold exceeded."
                   : isWatch 
-                  ? "ELEVATED WATCH: Accelerated gas activity detected in container."
+                  ? "ELEVATED WATCH: Accelerated gas activity detected in storage."
                   : "FRESH & SAFE: Biochemical parameters are within optimal baseline."
                 }
               </div>
             </div>
 
-            <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255, 255, 255, 0.25)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Engine Status:</span>
-              <span style={{ fontWeight: 800 }}>{isSpoiled ? "SPOILAGE_ONSET" : isWatch ? "WATCH_STATE" : "STABLE_FRESH"}</span>
+            <div style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.25)', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span>State:</span>
+              <strong style={{ letterSpacing: '0.04em' }}>{isSpoiled ? "SPOILAGE_ONSET" : isWatch ? "WATCH_STATE" : "STABLE_FRESH"}</strong>
             </div>
           </div>
 
           {/* FACTOR 2: Remaining Useful Shelf Life */}
           <div className="factor-card">
             <div>
-              <div className="factor-header-row">
-                <span className="factor-label" style={{ color: 'var(--text-sub)' }}>2. Remaining Useful Shelf Life</span>
-                <Clock size={20} color="#059669" />
+              <div className="factor-card-title">
+                <span>2. Remaining Useful Shelf Life</span>
+                <Clock size={18} color="#059669" />
               </div>
 
               {/* Show SPOILED when risk is 80 to 100%, otherwise show remaining hours */}
               {isSpoiled ? (
-                <div className="spoiled-banner">
-                  <div className="spoiled-banner-title">
-                    <AlertOctagon size={28} />
+                <div className="spoiled-state-banner">
+                  <div className="spoiled-state-title">
+                    <AlertOctagon size={24} />
                     <span>SPOILED</span>
                   </div>
-                  <div className="spoiled-banner-sub">
+                  <div className="spoiled-state-desc">
                     Shelf life expired. Product has reached terminal decomposition. Not fit for sale or consumption.
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div className="shelf-life-hero-val">
-                    {rulHours.toFixed(1)} <span style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-sub)' }}>Hours</span>
+                  <div className="shelf-life-metric">
+                    {rulHours.toFixed(1)} <span>Hours Remaining</span>
                   </div>
-                  <div className="confidence-range-tag">
+                  <div className="confidence-chip">
                     <span>95% Confidence Interval:</span>
-                    <strong style={{ color: 'var(--text-dark)' }}>
-                      [{(rulHours * 0.85).toFixed(1)}h – {(rulHours * 1.15).toFixed(1)}h]
-                    </strong>
+                    <strong>[{(rulHours * 0.85).toFixed(1)}h – {(rulHours * 1.15).toFixed(1)}h]</strong>
                   </div>
-                  <div className="factor-caption" style={{ marginTop: '0.6rem' }}>
-                    Estimated time remaining before food crosses the spoilage threshold under current conditions.
+                  <div className="card-meta-text" style={{ marginTop: '12px' }}>
+                    Estimated shelf life remaining before crossing the critical spoilage boundary.
                   </div>
                 </div>
               )}
             </div>
 
-            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-delicate)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-sub)' }}>
-              <span>Threshold Standard:</span>
-              <strong style={{ color: 'var(--text-dark)' }}>Critical Index &ge; 80%</strong>
+            <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-tertiary)' }}>
+              <span>Critical Breach Point:</span>
+              <strong style={{ color: 'var(--text-primary)' }}>Risk &ge; 80%</strong>
             </div>
           </div>
 
-          {/* FACTOR 3: Degradation Velocity & Predictive Scenarios */}
+          {/* FACTOR 3: Degradation Velocity & Scenarios */}
           <div className="factor-card">
             <div>
-              <div className="factor-header-row">
-                <span className="factor-label" style={{ color: 'var(--text-sub)' }}>3. Degradation Velocity & Scenarios</span>
-                <TrendingDown size={20} color="#b45309" />
+              <div className="factor-card-title">
+                <span>3. Degradation Velocity &amp; Possibilities</span>
+                <Activity size={18} color="#b45309" />
               </div>
 
-              <div className="velocity-rate-badge">
-                <span style={{ color: Math.abs(degradationVelocity) > 0.1 ? '#b91c1c' : '#15803d' }}>
-                  {degradationVelocity.toFixed(3)} ticks/sec
+              <div className="velocity-readout-row">
+                <span className="velocity-number" style={{ color: Math.abs(degradationVelocity) > 0.1 ? '#b91c1c' : '#15803d' }}>
+                  {degradationVelocity.toFixed(3)}
                 </span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-sub)' }}>
-                  ({Math.abs(degradationVelocity) > 0.1 ? 'Fast Degradation' : 'Stable Rate'})
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>ticks/sec</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  ({Math.abs(degradationVelocity) > 0.1 ? 'Fast Rate' : 'Slow Steady Rate'})
                 </span>
               </div>
 
-              {/* Predictive Scenarios based on conditions */}
-              <div className="scenarios-box">
-                <div className="scenario-row">
-                  <Snowflake size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: 2 }} />
+              {/* Conditions Possibilities */}
+              <div className="scenario-list">
+                <div className="scenario-item">
+                  <Snowflake size={15} color="#2563eb" style={{ flexShrink: 0, marginTop: 1 }} />
                   <div>
-                    <strong>Under Cold Storage (4°C):</strong> Spoilage will <strong>slow down by 78%</strong> (extends shelf life by ~4.5x).
+                    <strong>Under Cold Storage (4°C):</strong> Spoilage will <strong>slow down by ~78%</strong> (extends shelf life by 4.8x).
                   </div>
                 </div>
 
-                <div className="scenario-row">
-                  <Leaf size={16} color="#15803d" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div className="scenario-item">
+                  <Leaf size={15} color="#15803d" style={{ flexShrink: 0, marginTop: 1 }} />
                   <div>
-                    <strong>At Current Conditions ({sensor.temperature_c}°C, {sensor.humidity_pct}% RH):</strong> Product will spoil steadily at the current velocity.
+                    <strong>At Current Conditions ({sensor.temperature_c.toFixed(1)}°C):</strong> Spoilage will progress steadily at current rate.
                   </div>
                 </div>
 
-                <div className="scenario-row">
-                  <SunMedium size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div className="scenario-item">
+                  <SunMedium size={15} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
                   <div>
-                    <strong>If Temperature Rises (&gt;35°C):</strong> Spoilage will <strong>accelerate fast (3.2x)</strong> and spoil within 4 to 6 hours.
+                    <strong>If Temperature Rises (&gt;35°C):</strong> Spoilage will <strong>accelerate fast (3.2x)</strong> and spoil in 4 to 6 hours.
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* FACTOR 4 & 5: Thermal Risk vs Biochemical Risk (with 1 simple English sentence each) */}
+          {/* FACTOR 4 & 5: Thermal Risk vs Biochemical Risk (1 Simple Sentence Each) */}
           <div className="factor-card">
             <div>
-              <div className="factor-header-row">
-                <span className="factor-label" style={{ color: 'var(--text-sub)' }}>4 &amp; 5. Thermal Risk vs. Biochemical Risk</span>
-                <Layers size={20} color="#15803d" />
+              <div className="factor-card-title">
+                <span>4 &amp; 5. Thermal vs. Biochemical Risk</span>
+                <Layers size={18} color="#15803d" />
               </div>
 
-              <div className="risk-vectors-container">
+              <div className="vector-split-container">
                 {/* Biochemical Risk */}
-                <div className="vector-block">
-                  <div className="vector-top-row">
-                    <span className="vector-title">Biochemical Gas Risk</span>
-                    <span className="vector-pct" style={{ color: '#059669' }}>{Math.round(bioRisk * 100)}%</span>
+                <div className="vector-row">
+                  <div className="vector-row-header">
+                    <span className="vector-name">Biochemical Gas Risk</span>
+                    <span className="vector-percent" style={{ color: '#059669' }}>{Math.round(bioRisk * 100)}%</span>
                   </div>
-                  <div className="vector-simple-explanation">
-                    <strong>Simple Explanation:</strong> Measures actual rotting gases (VOCs and NOx) released as bacteria decompose the food.
+                  <div className="vector-sentence">
+                    Measures actual rotting gases (VOCs and NOx) released as bacteria decompose the food.
                   </div>
-                  <div className="bar-track">
-                    <div className="bar-fill-bio" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
+                  <div className="meter-track">
+                    <div className="meter-fill-bio" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
                   </div>
                 </div>
 
                 {/* Thermal Risk */}
-                <div className="vector-block">
-                  <div className="vector-top-row">
-                    <span className="vector-title">Thermal Abuse Risk (Arrhenius)</span>
-                    <span className="vector-pct" style={{ color: '#dc2626' }}>{Math.round(thermalRisk * 100)}%</span>
+                <div className="vector-row">
+                  <div className="vector-row-header">
+                    <span className="vector-name">Thermal Abuse Risk</span>
+                    <span className="vector-percent" style={{ color: '#dc2626' }}>{Math.round(thermalRisk * 100)}%</span>
                   </div>
-                  <div className="vector-simple-explanation">
-                    <strong>Simple Explanation:</strong> Measures heat damage over time based on how warm the food got and for how long.
+                  <div className="vector-sentence">
+                    Measures accumulated heat damage over time based on how warm the food got and for how long.
                   </div>
-                  <div className="bar-track">
-                    <div className="bar-fill-thermal" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
+                  <div className="meter-track">
+                    <div className="meter-fill-thermal" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ marginTop: '0.85rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border-delicate)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-sub)' }}>
+            <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-tertiary)' }}>
               <span>Primary Driver:</span>
-              <strong style={{ color: 'var(--text-dark)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>
                 {bioRisk > thermalRisk ? "Biochemical Gas Degradation Dominant" : "Thermal Heat Abuse Dominant"}
               </strong>
             </div>
@@ -387,56 +405,53 @@ export default function App() {
       </section>
 
       {/* ================================================================ */}
-      {/* SECTION 2: SENSOR METRICS (EXACT FORMAT AND READINGS AS REQUESTED) */}
+      {/* SECTION 2: SENSOR METRICS (EXACTLY AS SPECIFIED)                 */}
       {/* ================================================================ */}
       <section className="sensor-section">
-        <div className="section-label-bar">
-          <div className="section-title">
-            <Cpu size={20} color="#059669" />
-            <span>Hardware Telemetry Stream</span>
-          </div>
-          <div className="section-subtext">Direct SGP41 MOX Gas + SHT40 Environmental Probes</div>
+        <div className="section-headline">
+          <Wind size={18} color="#059669" />
+          <span>Telemetry Stream</span>
         </div>
 
         <div className="sensor-grid-4">
-          {/* 1. VOC Raw Sensor */}
-          <div className="sensor-box">
-            <div className="sensor-title-text">
+          {/* VOC Raw Sensor */}
+          <div className="sensor-metric-card">
+            <div className="sensor-name">
               <span>VOC Raw Sensor</span>
-              <Wind size={18} color="#059669" />
+              <Wind size={16} color="#059669" />
             </div>
-            <div className="sensor-value-huge">{sensor.voc_raw.toLocaleString()}</div>
-            <div className="sensor-desc-text">SGP41 MOX Resistance</div>
+            <div className="sensor-numeric-value">{sensor.voc_raw.toLocaleString()}</div>
+            <div className="sensor-sub-caption">SGP41 MOX Resistance</div>
           </div>
 
-          {/* 2. NOx Raw Ticks */}
-          <div className="sensor-box">
-            <div className="sensor-title-text">
+          {/* NOx Raw Ticks */}
+          <div className="sensor-metric-card">
+            <div className="sensor-name">
               <span>NOx Raw Ticks</span>
-              <Radio size={18} color="#d97706" />
+              <Radio size={16} color="#d97706" />
             </div>
-            <div className="sensor-value-huge">{sensor.nox_raw.toLocaleString()}</div>
-            <div className="sensor-desc-text">Nitrogen Oxide Mix</div>
+            <div className="sensor-numeric-value">{sensor.nox_raw.toLocaleString()}</div>
+            <div className="sensor-sub-caption">Nitrogen Oxide Mix</div>
           </div>
 
-          {/* 3. Temperature */}
-          <div className="sensor-box">
-            <div className="sensor-title-text">
+          {/* Temperature */}
+          <div className="sensor-metric-card">
+            <div className="sensor-name">
               <span>Temperature</span>
-              <Thermometer size={18} color="#dc2626" />
+              <Thermometer size={16} color="#dc2626" />
             </div>
-            <div className="sensor-value-huge">{sensor.temperature_c.toFixed(1)}°C</div>
-            <div className="sensor-desc-text">SHT40 Cold-Chain Probe</div>
+            <div className="sensor-numeric-value">{sensor.temperature_c.toFixed(1)}°C</div>
+            <div className="sensor-sub-caption">SHT40 Cold-Chain Probe</div>
           </div>
 
-          {/* 4. Humidity */}
-          <div className="sensor-box">
-            <div className="sensor-title-text">
+          {/* Humidity */}
+          <div className="sensor-metric-card">
+            <div className="sensor-name">
               <span>Humidity</span>
-              <Droplets size={18} color="#2563eb" />
+              <Droplets size={16} color="#2563eb" />
             </div>
-            <div className="sensor-value-huge">{sensor.humidity_pct.toFixed(1)}%</div>
-            <div className="sensor-desc-text">Relative Humidity (RH)</div>
+            <div className="sensor-numeric-value">{sensor.humidity_pct.toFixed(1)}%</div>
+            <div className="sensor-sub-caption">Relative Humidity (RH)</div>
           </div>
         </div>
       </section>
@@ -446,82 +461,84 @@ export default function App() {
       {/* ================================================================ */}
       <section className="curves-section">
         <div className="curves-grid-2">
-          {/* Curve 1: VOC Gas Degradation Curve */}
-          <div className="curve-card">
-            <div className="curve-header-flex">
+          {/* VOC Gas Degradation Curve */}
+          <div className="curve-chart-card">
+            <div className="curve-card-top">
               <div>
-                <div className="curve-heading">VOC Gas Degradation Curve</div>
-                <div className="curve-subheading">Sensirion SGP41 Raw Ticks vs. Time</div>
+                <div className="curve-main-title">VOC Gas Degradation Curve</div>
+                <div className="curve-subtitle-desc">Sensirion SGP41 Raw Ticks vs. Time</div>
               </div>
-              <div className="curve-badge-val" style={{ color: '#059669' }}>
+              <div className="curve-badge" style={{ color: '#059669' }}>
                 {sensor.voc_raw} ticks
               </div>
             </div>
-            <div className="svg-canvas-container">
-              {renderSVGChart(vocHistory, '#059669', 'ticks')}
+            <div className="chart-svg-box">
+              {renderSVGChart(vocHistory, '#059669')}
             </div>
           </div>
 
-          {/* Curve 2: Thermal Abuse Timeline */}
-          <div className="curve-card">
-            <div className="curve-header-flex">
+          {/* Thermal Abuse Timeline */}
+          <div className="curve-chart-card">
+            <div className="curve-card-top">
               <div>
-                <div className="curve-heading">Thermal Abuse Timeline</div>
-                <div className="curve-subheading">Temperature (°C) with Arrhenius integration</div>
+                <div className="curve-main-title">Thermal Abuse Timeline</div>
+                <div className="curve-subtitle-desc">Temperature (°C) with Arrhenius integration</div>
               </div>
-              <div className="curve-badge-val" style={{ color: '#dc2626' }}>
+              <div className="curve-badge" style={{ color: '#dc2626' }}>
                 {sensor.temperature_c.toFixed(1)}°C
               </div>
             </div>
-            <div className="svg-canvas-container">
-              {renderSVGChart(tempHistory, '#dc2626', '°C', 20, 45)}
+            <div className="chart-svg-box">
+              {renderSVGChart(tempHistory, '#dc2626', 15, 45)}
             </div>
           </div>
         </div>
       </section>
 
       {/* ================================================================ */}
-      {/* SECTION 4: INTERACTIVE PITCH & DEMONSTRATION CONTROLS            */}
+      {/* SECTION 4: INTERACTIVE CONTROLS & LIVE SIMULATION                */}
       {/* ================================================================ */}
-      <section className="demo-control-bar">
-        <div className="control-bar-label">
-          <Flame size={20} color="#ea580c" />
-          <span>Interactive Pitch Controls:</span>
+      <section className="interactive-toolbar">
+        <div className="toolbar-header-flex">
+          <div className="toolbar-title">
+            <Sliders size={18} color="#15803d" />
+            <span>Interactive Scenarios &amp; Live Testing:</span>
+          </div>
+
+          <div className="preset-button-row">
+            <button className="action-btn btn-fresh-tone" onClick={() => applyPreset('fresh')}>
+              🌿 Normal Baseline (Risk 12% &rarr; Green Card)
+            </button>
+            <button className="action-btn btn-watch-tone" onClick={() => applyPreset('watch')}>
+              ⚠️ Thermal Stress (Risk 48% &rarr; Amber Card)
+            </button>
+            <button className="action-btn btn-spoil-tone" onClick={() => applyPreset('spoiled')}>
+              🚨 High Gas Surge (Risk 89% &rarr; Red Card + SPOILED)
+            </button>
+            <button className="action-btn" onClick={fetchLiveStatus} title="Sync with live stream">
+              <RefreshCw size={13} />
+              <span>Sync</span>
+            </button>
+          </div>
         </div>
 
-        <div className="interactive-btn-group">
-          <button 
-            className="demo-btn btn-green-sim"
-            onClick={() => applyPreset('fresh')}
-            title="Demonstrate safe baseline where card is solid Green"
-          >
-            🌿 Fresh Baseline (Risk &lt; 30% &rarr; Green Card)
-          </button>
-
-          <button 
-            className="demo-btn btn-heat-sim"
-            onClick={() => applyPreset('heat')}
-            title="Demonstrate thermal stress"
-          >
-            🔥 Heat Spike (36.8°C &rarr; Amber Card)
-          </button>
-
-          <button 
-            className="demo-btn btn-spoil-sim"
-            onClick={() => applyPreset('spoil')}
-            title="Demonstrate terminal spoilage where card turns solid Red and shows SPOILED"
-          >
-            🚨 Spoilage Surge (Risk &ge; 80% &rarr; Solid Red + SPOILED)
-          </button>
-
-          <button 
-            className="demo-btn"
-            onClick={fetchStatus}
-            title="Pull latest reading from AWS IoT stream"
-          >
-            <RefreshCw size={14} />
-            <span>Sync Live</span>
-          </button>
+        {/* Live Interactive Temperature Slider */}
+        <div className="interactive-slider-row">
+          <span className="slider-label">
+            🌡️ Test Ambient Temperature:
+          </span>
+          <input 
+            type="range" 
+            min="4" 
+            max="42" 
+            step="0.5"
+            value={sensor.temperature_c}
+            onChange={(e) => handleTempSlider(e.target.value)}
+            className="slider-input" 
+          />
+          <span className="slider-value-display">
+            {sensor.temperature_c.toFixed(1)}°C
+          </span>
         </div>
       </section>
     </div>

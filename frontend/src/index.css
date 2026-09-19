@@ -1,41 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
 :root {
-  --bg-pure-white: #ffffff;
-  --bg-subtle-ivory: #fafbf9;
-  --bg-cream: #f4f6f2;
+  /* Strict 8pt Modular System */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Strict Typography Scale (1.25 Major Third) */
+  --font-xs: 0.75rem;    /* 12px */
+  --font-sm: 0.875rem;   /* 14px */
+  --font-base: 1rem;      /* 16px */
+  --font-lg: 1.125rem;   /* 18px */
+  --font-xl: 1.375rem;   /* 22px */
+  --font-2xl: 1.75rem;   /* 28px */
+  --font-3xl: 2.25rem;   /* 36px */
+  --font-4xl: 3rem;      /* 48px */
+
+  /* Neutral Tone Palette */
+  --surface-white: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --surface-subtle: #f8faf8;
   
-  --border-delicate: #e8ece7;
-  --border-focus: #c5d4c2;
-  
-  --text-dark: #121a15;
-  --text-body: #37473f;
-  --text-sub: #6c7d74;
-  --text-faint: #9ba8a1;
+  --border-light: rgba(226, 232, 227, 0.9);
+  --border-hover: rgba(180, 195, 183, 0.95);
 
-  /* Fresh produce green palette */
-  --produce-green: #15803d;
-  --produce-green-dark: #0f5132;
-  --produce-green-light: #f0fdf4;
-  --produce-green-border: #bbf7d0;
+  --text-primary: #141f18;
+  --text-secondary: #3b4d42;
+  --text-tertiary: #6b7e73;
+  --text-muted: #8fa096;
 
-  /* Warning / Watch amber */
-  --produce-amber: #b45309;
-  --produce-amber-dark: #78350f;
-  --produce-amber-light: #fffbeb;
-  --produce-amber-border: #fde68a;
+  /* Semantic Health Colors */
+  --color-fresh: #16a34a;
+  --color-fresh-dark: #15803d;
+  --color-fresh-glow: rgba(22, 163, 74, 0.2);
 
-  /* Critical / Spoilage red */
-  --produce-red: #b91c1c;
-  --produce-red-dark: #7f1d1d;
-  --produce-red-light: #fef2f2;
-  --produce-red-border: #fecaca;
+  --color-watch: #d97706;
+  --color-watch-dark: #b45309;
 
-  --shadow-subtle: 0 2px 8px rgba(22, 34, 27, 0.04), 0 1px 3px rgba(22, 34, 27, 0.02);
-  --shadow-hover: 0 8px 24px rgba(22, 34, 27, 0.07), 0 2px 6px rgba(22, 34, 27, 0.03);
+  --color-spoiled: #dc2626;
+  --color-spoiled-dark: #b91c1c;
+  --color-spoiled-glow: rgba(220, 38, 38, 0.25);
 
-  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Space Grotesk', monospace;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --shadow-subtle: 0 4px 20px rgba(18, 32, 22, 0.05), 0 1px 3px rgba(18, 32, 22, 0.02);
+  --shadow-elevation: 0 12px 32px rgba(18, 32, 22, 0.08), 0 2px 6px rgba(18, 32, 22, 0.03);
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 * {
@@ -45,16 +65,16 @@
 }
 
 body {
-  font-family: var(--font-main);
-  background-color: var(--bg-pure-white);
-  color: var(--text-dark);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  
-  /* Subtle fresh botanical & vegetable watermark on clean white background */
-  background-image: radial-gradient(#15803d08 1px, transparent 1px), radial-gradient(#d9770608 1px, #ffffff 1px);
-  background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Fresh Vegetables Photography Background with Crisp White Overlay */
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.93) 240px, rgba(255, 255, 255, 0.97) 100%),
+    url('/src/assets/fresh_vegetables_bg.jpg') no-repeat top center / cover fixed;
 }
 
 button {
