@@ -30,6 +30,46 @@
   line-height: 1;
 }
 
+/* Page Switcher Segmented Tabs */
+.nav-tab-container {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-tab-btn:hover {
+  color: #000000;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-tab-btn.active {
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
 .header-status-group {
   display: flex;
   align-items: center;
@@ -81,24 +121,41 @@
   gap: var(--space-5);
 }
 
-/* Base Factor Card */
+/* Page View Switch Animation */
+.page-view {
+  animation: pageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Base Factor Card with Translucent Frosted Glass */
 .factor-card {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   min-height: 240px;
 }
 
 .factor-card:hover {
   box-shadow: var(--shadow-elevation);
-  border-color: rgba(0, 0, 0, 0.25);
+  border-color: rgba(0, 0, 0, 0.2);
 }
 
 .factor-card-title {
@@ -113,62 +170,62 @@
   margin-bottom: var(--space-3);
 }
 
-/* FACTOR 1: Spoilage Risk Score (Translucent Color Grading Glassmorphism) */
+/* FACTOR 1: Spoilage Risk Score (Bright & Translucent Color Grading Glassmorphism) */
 .card-green-fresh {
-  background: linear-gradient(135deg, rgba(21, 128, 61, 0.75) 0%, rgba(22, 101, 52, 0.65) 100%) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.78) 0%, rgba(16, 185, 129, 0.68) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 12px 32px rgba(21, 128, 61, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 32px rgba(34, 197, 94, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
 }
 
 .card-green-fresh .factor-card-title,
 .card-green-fresh .card-meta-text {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
 }
 
 .card-green-fresh .risk-metric-big {
   color: #ffffff !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 .card-amber-watch {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.78) 0%, rgba(180, 83, 9, 0.68) 100%) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.80) 0%, rgba(217, 119, 6, 0.70) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 12px 32px rgba(217, 119, 6, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
 }
 
 .card-amber-watch .factor-card-title,
 .card-amber-watch .card-meta-text {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
 }
 
 .card-amber-watch .risk-metric-big {
   color: #ffffff !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 .card-red-spoiled {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.80) 0%, rgba(153, 27, 27, 0.70) 100%) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82) 0%, rgba(220, 38, 38, 0.72) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 12px 36px rgba(220, 38, 38, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 36px rgba(239, 68, 68, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
 }
 
 .card-red-spoiled .factor-card-title,
 .card-red-spoiled .card-meta-text {
-  color: rgba(255, 255, 255, 0.94) !important;
+  color: rgba(255, 255, 255, 0.96) !important;
 }
 
 .card-red-spoiled .risk-metric-big {
   color: #ffffff !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 .risk-metric-big {
@@ -383,12 +440,13 @@
 }
 
 .sensor-metric-card {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-md);
   padding: var(--space-5);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -429,7 +487,7 @@
 
 /* SECTION 3: SENSOR CURVES */
 .curves-section {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .curves-grid-2 {
@@ -439,12 +497,13 @@
 }
 
 .curve-chart-card {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
 .curve-card-top {
@@ -512,14 +571,50 @@
   height: 150px;
 }
 
+/* Telemetry Dedicated Footer Bar */
+.telemetry-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.telemetry-footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.footer-tag {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  color: #000000;
+  font-family: var(--font-mono);
+}
+
+.footer-sub {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
 /* SECTION 4: INTERACTIVE CONTROLS */
 .interactive-toolbar {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -561,6 +656,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  cursor: pointer;
 }
 
 .action-btn:hover {
@@ -568,12 +664,16 @@
   color: #ffffff;
 }
 
+.action-btn:active {
+  transform: scale(0.98);
+}
+
 /* Slider Bar with Black Accent */
 .interactive-slider-row {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.9);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border-light);
@@ -614,13 +714,26 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .app-viewport {
     padding: var(--space-4) var(--space-3) var(--space-8) var(--space-3);
   }
   .brand-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .nav-tab-container {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .nav-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+  .header-status-group {
+    justify-content: center;
   }
   .sensor-grid-4 {
     grid-template-columns: 1fr;
