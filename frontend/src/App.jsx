@@ -159,8 +159,8 @@ export default function App() {
     }
   };
 
-  // Mathematically Scaled SVG Sparkline (Monochrome Black & White)
-  const renderSVGChart = (data, minBound, maxBound) => {
+  // Mathematically Scaled SVG Sparkline with Dynamic Color Gradients
+  const renderSVGChart = (data, strokeColor = '#10b981', minBound, maxBound) => {
     if (!data || data.length < 2) return null;
     const min = minBound ?? (Math.min(...data) * 0.995);
     const max = maxBound ?? (Math.max(...data) * 1.005);
@@ -176,14 +176,15 @@ export default function App() {
       return `${x},${y}`;
     }).join(' ');
 
-    const gradId = `blackGrad-${data.length}-${Math.round(min)}`;
+    const safeColorId = strokeColor.replace(/[^a-zA-Z0-9]/g, '');
+    const gradId = `chartGrad-${safeColorId}-${data.length}`;
 
     return (
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#000000" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0.0" />
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
           </linearGradient>
         </defs>
         <polygon 
@@ -192,8 +193,8 @@ export default function App() {
         />
         <polyline
           fill="none"
-          stroke="#000000"
-          strokeWidth="2.5"
+          stroke={strokeColor}
+          strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
           points={points}
@@ -202,10 +203,10 @@ export default function App() {
           <circle
             cx={width - pad}
             cy={height - pad - ((data[data.length - 1] - min) / range) * (height - 2 * pad)}
-            r="4.5"
-            fill="#000000"
+            r="5"
+            fill={strokeColor}
             stroke="#ffffff"
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
         )}
       </svg>
@@ -464,12 +465,13 @@ export default function App() {
                 <div className="curve-main-title">VOC Gas Degradation Curve</div>
                 <div className="curve-subtitle-desc">Sensirion SGP41 Raw Ticks vs. Time</div>
               </div>
-              <div className="curve-badge">
-                {sensor.voc_raw.toLocaleString()} ticks
+              <div className="curve-badge curve-badge-green">
+                <span className="badge-pulse-green" />
+                <span>{sensor.voc_raw.toLocaleString()} ticks</span>
               </div>
             </div>
             <div className="chart-svg-box">
-              {renderSVGChart(vocHistory)}
+              {renderSVGChart(vocHistory, '#10b981')}
             </div>
           </div>
 
@@ -480,12 +482,13 @@ export default function App() {
                 <div className="curve-main-title">Thermal Abuse Timeline</div>
                 <div className="curve-subtitle-desc">Temperature (°C) with Arrhenius integration</div>
               </div>
-              <div className="curve-badge">
-                {sensor.temperature_c.toFixed(1)}°C
+              <div className="curve-badge curve-badge-red">
+                <span className="badge-pulse-red" />
+                <span>{sensor.temperature_c.toFixed(1)}°C</span>
               </div>
             </div>
             <div className="chart-svg-box">
-              {renderSVGChart(tempHistory, 15, 45)}
+              {renderSVGChart(tempHistory, '#ef4444', 15, 45)}
             </div>
           </div>
         </div>
