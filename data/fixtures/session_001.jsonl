@@ -1,0 +1,5 @@
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.20,"humidity_pct":66.05,"pressure_hpa":947.09,"voc_raw":32158,"nox_raw":0,"voc_index":0,"nox_index":0,"wifi_rssi":-35}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.20,"humidity_pct":66.17,"pressure_hpa":947.07,"voc_raw":32213,"nox_raw":21986,"voc_index":0,"nox_index":0,"wifi_rssi":-35}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.21,"humidity_pct":66.74,"pressure_hpa":947.10,"voc_raw":32255,"nox_raw":21689,"voc_index":0,"nox_index":0,"wifi_rssi":-39}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.23,"humidity_pct":67.02,"pressure_hpa":947.07,"voc_raw":32238,"nox_raw":21505,"voc_index":0,"nox_index":0,"wifi_rssi":-40}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.23,"humidity_pct":66.74,"pressure_hpa":947.07,"voc_raw":32248,"nox_raw":21330,"voc_index":0,"nox_index":0,"wifi_rssi":-49}

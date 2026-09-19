@@ -1,0 +1,3 @@
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":105.20,"humidity_pct":66.05,"voc_raw":32158,"nox_raw":0}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.20,"humidity_pct":66.17,"voc_raw":-500,"nox_raw":21986}
+{"device_id":"FreshTrace-Node-01","food_type":"paneer","temperature_c":30.21,"humidity_pct":66.74,"voc_raw":32255,"nox_raw":21689,"sequence_number": 5}

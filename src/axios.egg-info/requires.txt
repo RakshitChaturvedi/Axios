@@ -1,0 +1,7 @@
+pydantic<3,>=2
+pydantic-settings<3,>=2
+
+[dev]
+pytest<9,>=8
+pytest-cov<7,>=5
+ruff<1,>=0.6
