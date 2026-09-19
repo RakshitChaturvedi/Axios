@@ -5,16 +5,21 @@
   padding: var(--space-6) var(--space-5) var(--space-12) var(--space-5);
 }
 
-/* Minimalist Clean Header with Black Elements */
+/* Minimalist Clean Frosted Header */
 .brand-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-4);
-  padding-bottom: var(--space-5);
+  padding: 14px var(--space-6);
   margin-bottom: var(--space-8);
-  border-bottom: 1.5px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
 }
 
 .brand-left {
