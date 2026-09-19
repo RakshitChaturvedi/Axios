@@ -83,7 +83,7 @@ body::before {
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: url('./assets/fresh_vegetables_bg.png') no-repeat bottom center / cover;
+  background: url('./assets/fresh_vegetables_bg.png') no-repeat center center / cover;
   pointer-events: none;
 }
 
