@@ -74,7 +74,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Soft Blurred Fresh Produce Background (Bokeh Effect) */
+/* Soft Blurred Fresh Produce Background with Edge-Revealing Radial Vignette */
 body::before {
   content: '';
   position: fixed;
@@ -84,9 +84,9 @@ body::before {
   bottom: -14px;
   z-index: -1;
   background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.48) 280px, rgba(255, 255, 255, 0.62) 100%),
-    url('/src/assets/fresh_vegetables_bg.jpg') no-repeat top center / cover;
-  filter: blur(5px);
+    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.20) 60%, rgba(255, 255, 255, 0.0) 100%),
+    url('./assets/fresh_vegetables_bg.jpg') no-repeat top center / cover;
+  filter: blur(4px);
   transform: scale(1.03);
   pointer-events: none;
 }

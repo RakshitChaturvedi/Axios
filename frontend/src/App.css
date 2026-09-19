@@ -104,20 +104,10 @@
   margin-bottom: var(--space-8);
 }
 
-.section-headline {
-  font-size: var(--font-lg);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--text-black);
-  margin-bottom: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.factors-grid-2x2 {
+/* Hero 2-Column Grid for Spoilage Risk Score & Remaining Shelf Life */
+.factors-hero-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-5);
 }
 
@@ -139,23 +129,22 @@
 
 /* Base Factor Card with Translucent Frosted Glass */
 .factor-card {
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1.5px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   min-height: 240px;
 }
 
 .factor-card:hover {
   box-shadow: var(--shadow-elevation);
-  border-color: rgba(0, 0, 0, 0.2);
 }
 
 .factor-card-title {
@@ -170,9 +159,29 @@
   margin-bottom: var(--space-3);
 }
 
-/* FACTOR 1: Spoilage Risk Score (Bright & Translucent Color Grading Glassmorphism) */
+/* FACTOR 1: Spoilage Risk Score (Centerpiece Hero Card with Translucent Dynamic Color) */
+.factor-card-hero {
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hero-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-hero-footer strong {
+  letter-spacing: 0.04em;
+}
+
 .card-green-fresh {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.78) 0%, rgba(16, 185, 129, 0.68) 100%) !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.80) 0%, rgba(16, 185, 129, 0.70) 100%) !important;
   backdrop-filter: blur(14px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
@@ -191,7 +200,7 @@
 }
 
 .card-amber-watch {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.80) 0%, rgba(217, 119, 6, 0.70) 100%) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.82) 0%, rgba(217, 119, 6, 0.72) 100%) !important;
   backdrop-filter: blur(14px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
@@ -210,7 +219,7 @@
 }
 
 .card-red-spoiled {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82) 0%, rgba(220, 38, 38, 0.72) 100%) !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.84) 0%, rgba(220, 38, 38, 0.74) 100%) !important;
   backdrop-filter: blur(14px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
   color: #ffffff !important;
@@ -245,7 +254,12 @@
   font-weight: 500;
 }
 
-/* FACTOR 2: Remaining Useful Shelf Life */
+/* FACTOR 2: Remaining Useful Shelf Life (Cool Blue Accent Card) */
+.factor-card-shelflife {
+  border-top: 4px solid #0284c7 !important;
+  background: rgba(255, 255, 255, 0.88);
+}
+
 .shelf-life-metric {
   font-size: var(--font-4xl);
   font-weight: 800;
@@ -267,12 +281,13 @@
   letter-spacing: normal;
 }
 
-.confidence-chip {
+.confidence-chip-blue {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  background: #000000;
-  color: #ffffff;
+  background: rgba(2, 132, 199, 0.10);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  color: #0369a1;
   border-radius: var(--radius-sm);
   padding: 4px 10px;
   font-size: var(--font-xs);
@@ -281,9 +296,24 @@
   margin-top: var(--space-2);
 }
 
-.confidence-chip span {
-  color: #cccccc;
+.confidence-chip-blue span {
+  color: #0284c7;
   font-weight: 500;
+}
+
+.card-footer-subtle {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-tertiary);
+}
+
+.card-footer-subtle strong {
+  color: var(--text-primary);
 }
 
 .spoiled-state-banner {
@@ -315,12 +345,25 @@
   color: #e5e5e5;
 }
 
-/* FACTOR 3: Degradation Velocity & Scenarios */
+/* FACTOR 3: Degradation Velocity (Amber Theme with Embedded Graph) */
+.factor-card-velocity {
+  border-top: 4px solid #f59e0b !important;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.velocity-top-flex {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: var(--space-5);
+  align-items: center;
+  margin: var(--space-3) 0 var(--space-4) 0;
+}
+
 .velocity-readout-row {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  margin: var(--space-2) 0 var(--space-3) 0;
+  margin: var(--space-1) 0 var(--space-2) 0;
 }
 
 .velocity-number {
@@ -338,71 +381,157 @@
   font-family: var(--font-mono);
 }
 
-.velocity-status {
+.velocity-status-amber {
   font-size: var(--font-xs);
   font-weight: 700;
-  color: #000000;
-  background: #f0f0f0;
-  border: 1px solid #e0e0e0;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: var(--radius-sm);
-  padding: 2px 8px;
+  padding: 3px 10px;
 }
 
-.scenario-list {
-  background: #ffffff;
-  border: 1.5px solid var(--border-light);
+.velocity-chart-container {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1.5px solid rgba(245, 158, 11, 0.25);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.scenario-item {
+.velocity-chart-header {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #78350f;
+  margin-bottom: 4px;
+}
+
+.velocity-chart-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: rgba(217, 119, 6, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #b45309;
+}
+
+.velocity-svg-wrapper {
+  width: 100%;
+  height: 85px;
+}
+
+/* 3-Scenario Forecast Cards */
+.scenario-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.scenario-card {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   font-size: var(--font-xs);
   line-height: 1.45;
+}
+
+.scenario-card p {
+  margin: 0;
   color: var(--text-secondary);
 }
 
-.scenario-item strong {
-  color: #000000;
+.scenario-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
 }
 
-/* FACTOR 4 & 5: Thermal vs Biochemical Risk */
-.vector-split-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+.scenario-card-cold {
+  background: rgba(240, 249, 255, 0.9);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+}
+
+.scenario-card-cold .scenario-card-head strong {
+  color: #0369a1;
+}
+
+.scenario-card-current {
+  background: rgba(240, 253, 244, 0.9);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.scenario-card-current .scenario-card-head strong {
+  color: #15803d;
+}
+
+.scenario-card-hot {
+  background: rgba(254, 242, 242, 0.9);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.scenario-card-hot .scenario-card-head strong {
+  color: #b91c1c;
+}
+
+/* FACTOR 4 & 5: Thermal vs Biochemical Risk (At Last, with Vibrant Color Meters) */
+.factor-card-risks {
+  border-top: 4px solid #10b981 !important;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.vector-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
   margin-top: var(--space-2);
 }
 
-.vector-row {
+.vector-color-box {
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
-.vector-row-header {
+.vector-box-bio {
+  background: rgba(236, 253, 245, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.vector-box-thermal {
+  background: rgba(255, 241, 242, 0.85);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.vector-title-group {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 6px;
 }
 
-.vector-name {
+.vector-name-colored {
   font-size: var(--font-sm);
   font-weight: 800;
-  color: #000000;
 }
 
-.vector-percent {
-  font-size: var(--font-xl);
+.vector-percent-green {
+  font-size: var(--font-2xl);
   font-weight: 800;
   font-family: var(--font-mono);
-  color: #000000;
+  color: #059669;
+}
+
+.vector-percent-red {
+  font-size: var(--font-2xl);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #dc2626;
 }
 
 .vector-sentence {
@@ -411,21 +540,94 @@
   color: var(--text-secondary);
 }
 
-/* High-Contrast Black Progress Track */
+/* Color Meter Tracks */
 .meter-track {
   height: 8px;
-  background: #eeeeee;
-  border: 1px solid #dddddd;
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 9999px;
   overflow: hidden;
   margin-top: var(--space-1);
 }
 
-.meter-fill-black {
+.meter-fill-bio-green {
   height: 100%;
-  background: #000000;
+  background: linear-gradient(90deg, #34d399, #059669);
   border-radius: 9999px;
   transition: width 0.35s ease;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.meter-fill-thermal-red {
+  height: 100%;
+  background: linear-gradient(90deg, #fb7185, #dc2626);
+  border-radius: 9999px;
+  transition: width 0.35s ease;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+/* SENSOR LIVE UPDATE TIMESTAMP BANNER IN TELEMETRY STREAM */
+.telemetry-live-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.telemetry-timestamp-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.live-ping-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+  animation: liveDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes liveDotPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4); }
+}
+
+.telemetry-updated-text {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.telemetry-updated-text strong {
+  color: #000000;
+  font-weight: 700;
+}
+
+.telemetry-actions-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.telemetry-device-tag {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  background: #f4f4f5;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid #e4e4e7;
 }
 
 /* SECTION 2: SENSOR METRICS (EXACTLY AS SPECIFIED) */
@@ -440,22 +642,51 @@
 }
 
 .sensor-metric-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-md);
   padding: var(--space-5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sensor-metric-card:hover {
   transform: translateY(-2px);
-  border-color: #000000;
+  box-shadow: var(--shadow-elevation);
+}
+
+/* Logical Color Accents on Sensor Cards */
+.sensor-card-voc {
+  border-top: 4px solid #10b981 !important;
+}
+.sensor-card-voc:hover {
+  border-color: #10b981 !important;
+}
+
+.sensor-card-nox {
+  border-top: 4px solid #8b5cf6 !important;
+}
+.sensor-card-nox:hover {
+  border-color: #8b5cf6 !important;
+}
+
+.sensor-card-temp {
+  border-top: 4px solid #ea580c !important;
+}
+.sensor-card-temp:hover {
+  border-color: #ea580c !important;
+}
+
+.sensor-card-humidity {
+  border-top: 4px solid #0284c7 !important;
+}
+.sensor-card-humidity:hover {
+  border-color: #0284c7 !important;
 }
 
 .sensor-name {
@@ -497,13 +728,21 @@
 }
 
 .curve-chart-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1.5px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.curve-card-voc-accent {
+  border-top: 4px solid #10b981;
+}
+
+.curve-card-temp-accent {
+  border-top: 4px solid #ef4444;
 }
 
 .curve-card-top {
@@ -578,7 +817,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-4);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1.5px solid rgba(255, 255, 255, 0.75);
@@ -608,7 +847,7 @@
 
 /* SECTION 4: INTERACTIVE CONTROLS */
 .interactive-toolbar {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1.5px solid rgba(255, 255, 255, 0.75);
@@ -703,7 +942,16 @@
 
 /* MATHEMATICAL RESPONSIVE SCALING */
 @media (max-width: 1024px) {
-  .factors-grid-2x2 {
+  .factors-hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .velocity-top-flex {
+    grid-template-columns: 1fr;
+  }
+  .scenario-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .vector-split-grid {
     grid-template-columns: 1fr;
   }
   .curves-grid-2 {
@@ -752,5 +1000,9 @@
   .action-btn {
     flex: 1 1 calc(50% - 6px);
     justify-content: center;
+  }
+  .telemetry-live-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

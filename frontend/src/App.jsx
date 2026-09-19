@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  ShieldCheck, 
+  AlertTriangle, 
+  AlertOctagon, 
   Thermometer, 
   Droplets, 
   Wind, 
+  Clock, 
   Radio, 
+  Leaf, 
+  Activity, 
   RefreshCw, 
-  Sliders
+  Snowflake,
+  SunMedium,
+  Sliders,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import './App.css';
 
@@ -13,15 +23,14 @@ const API_BASE = 'http://localhost:8080';
 
 export default function App() {
   const [deviceId] = useState('FreshTrace-Node-01');
-  const [foodType] = useState('Tomato (Fresh)');
-  const [lastUpdatedSec, setLastUpdatedSec] = useState(14);
-  const [activePreset, setActivePreset] = useState('fresh');
+  const [foodType, setFoodType] = useState('tomato');
+  const [activeTab, setActiveTab] = useState('factors'); // 'factors' | 'telemetry'
 
   // Core Intelligence Values
   const [riskScore, setRiskScore] = useState(0.18);
-  const [rulHours, setRulHours] = useState(72.0);
+  const [rulHours, setRulHours] = useState(24.5);
   const [bioRisk, setBioRisk] = useState(0.18);
-  const [thermalRisk, setThermalRisk] = useState(0.00);
+  const [thermalRisk, setThermalRisk] = useState(0.12);
   const [degradationVelocity, setDegradationVelocity] = useState(-0.015);
 
   // Exact Sensor Metrics
@@ -32,23 +41,22 @@ export default function App() {
     humidity_pct: 67.9
   });
 
-  // Rolling Histories
+  // Rolling History for Curves
   const [vocHistory, setVocHistory] = useState([
     31720, 31690, 31660, 31630, 31600, 31580, 31560, 31555
   ]);
+  const [tempHistory, setTempHistory] = useState([
+    29.4, 29.6, 29.8, 30.0, 30.1, 30.1, 30.2, 30.2
+  ]);
   const [velocityHistory, setVelocityHistory] = useState([
-    -0.009, -0.010, -0.011, -0.012, -0.013, -0.014, -0.015, -0.015
+    -0.012, -0.013, -0.015, -0.014, -0.016, -0.015, -0.015, -0.015
   ]);
 
-  // Elapsed Seconds Counter
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setLastUpdatedSec(prev => (prev >= 60 ? 1 : prev + 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Live Timestamp Tracking
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [secondsAgo, setSecondsAgo] = useState(0);
 
-  // Fetch live state from backend API
+  // Fetch live state from backend API (connected to AWS IoT Core + RDS)
   const fetchLiveStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/devices/${deviceId}/status`);
@@ -58,10 +66,10 @@ export default function App() {
           const overall = data.risk.overall ?? data.spoilage_risk ?? 0.18;
           setRiskScore(overall);
           setBioRisk(data.risk.biochemical ?? 0.18);
-          setThermalRisk(data.risk.thermal ?? 0.0);
+          setThermalRisk(data.risk.thermal ?? 0.12);
         }
         if (data.remaining_useful_life) {
-          setRulHours(data.remaining_useful_life.hours ?? 72.0);
+          setRulHours(data.remaining_useful_life.hours ?? 24.5);
         }
         if (data.sensor) {
           const newTemp = data.sensor.temperature_c || 30.2;
@@ -72,46 +80,38 @@ export default function App() {
             temperature_c: newTemp,
             humidity_pct: data.sensor.humidity_pct || 67.9
           });
-          setVocHistory(prev => [...prev.slice(-12), newVoc]);
+          setVocHistory(prev => [...prev.slice(-15), newVoc]);
+          setTempHistory(prev => [...prev.slice(-15), newTemp]);
         }
-        setLastUpdatedSec(0);
+        setLastUpdated(new Date());
+        setSecondsAgo(0);
       }
     } catch (e) {
-      // Offline fallback
+      // Backend polling fallback
     }
   };
 
+  // Poll API every 4 seconds and increment elapsed seconds every second
   useEffect(() => {
     fetchLiveStatus();
-    const interval = setInterval(fetchLiveStatus, 5000);
-    return () => clearInterval(interval);
+    const pollInterval = setInterval(fetchLiveStatus, 4000);
+    const tickInterval = setInterval(() => {
+      setSecondsAgo(prev => prev + 1);
+    }, 1000);
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(tickInterval);
+    };
   }, [deviceId]);
 
-  // Derived Spoilage Progression Stage
-  // 0: FRESH (<30%), 1: WATCH (30-59%), 2: ONSET CANDIDATE (60-79%), 3: SPOILAGE ONSET (>=80%)
+  // Card Dynamic Style: Turns fully Green, Amber, or Red
   const isSpoiled = riskScore >= 0.80;
   const isWatch = riskScore >= 0.30 && riskScore < 0.80;
 
-  const getProgressionStep = () => {
-    if (riskScore >= 0.80) return 3; // SPOILAGE ONSET
-    if (riskScore >= 0.60) return 2; // ONSET CANDIDATE
-    if (riskScore >= 0.30) return 1; // WATCH
-    return 0; // FRESH
-  };
-
-  const progressionStep = getProgressionStep();
-
-  // Dynamic status text following user rule (No "FRESH & SAFE")
-  const getStatusHeadline = () => {
-    if (isSpoiled) return 'SPOILAGE ONSET DETECTED';
-    if (isWatch) return 'ELEVATED DEGRADATION RISK';
-    return 'FRESHNESS STATE: STABLE';
-  };
-
-  const getRiskCategory = () => {
-    if (isSpoiled) return 'CRITICAL';
-    if (isWatch) return 'ELEVATED';
-    return 'LOW';
+  const getRiskCardClass = () => {
+    if (isSpoiled) return 'factor-card card-red-spoiled factor-card-hero';
+    if (isWatch) return 'factor-card card-amber-watch factor-card-hero';
+    return 'factor-card card-green-fresh factor-card-hero';
   };
 
   // Interactive Temperature Slider calculation (Arrhenius kinetic live simulation)
@@ -122,618 +122,513 @@ export default function App() {
     const tKelvin = t + 273.15;
     const tRefKelvin = 4.0 + 273.15;
     const rateMultiplier = Math.exp(-(ea / r) * ((1.0 / tKelvin) - (1.0 / tRefKelvin)));
-    const calculatedThermal = Math.min(1.0, Math.max(0.0, (rateMultiplier * 0.04) - 0.04));
+    const calculatedThermal = Math.min(1.0, Math.max(0.02, (rateMultiplier * 0.05)));
 
-    const newOverall = Math.min(1.0, Math.max(bioRisk, calculatedThermal));
+    const newOverall = Math.max(bioRisk, calculatedThermal);
     setThermalRisk(calculatedThermal);
     setRiskScore(newOverall);
 
+    // Adjust velocity based on temperature
     const vel = -0.010 * (t / 25.0);
     setDegradationVelocity(vel);
-    setVelocityHistory(prev => [...prev.slice(-12), vel]);
+    setVelocityHistory(prev => [...prev.slice(-15), vel]);
 
+    // Recalculate remaining hours
     if (newOverall >= 0.80) {
       setRulHours(0.0);
     } else {
-      const remaining = Math.max(1.0, (0.85 - newOverall) / (Math.abs(vel) * 0.035));
+      const remaining = Math.max(1.0, (0.85 - newOverall) / (Math.abs(vel) * 0.08));
       setRulHours(remaining);
     }
 
     setSensor(prev => ({ ...prev, temperature_c: t }));
+    setTempHistory(prev => [...prev.slice(-15), t]);
+    setLastUpdated(new Date());
+    setSecondsAgo(0);
   };
 
-  // Preset Demonstrations
+  // Quick Preset Scenarios for Demonstrations
   const applyPreset = (preset) => {
-    setActivePreset(preset);
     if (preset === 'fresh') {
-      setRiskScore(0.18);
-      setRulHours(72.0);
-      setBioRisk(0.18);
-      setThermalRisk(0.00);
-      setDegradationVelocity(-0.015);
-      setVelocityHistory([-0.009, -0.011, -0.012, -0.014, -0.015, -0.015]);
-      setSensor({ voc_raw: 31555, nox_raw: 19601, temperature_c: 30.2, humidity_pct: 67.9 });
-      setVocHistory([31720, 31680, 31650, 31610, 31580, 31555]);
+      setRiskScore(0.12);
+      setRulHours(42.0);
+      setBioRisk(0.10);
+      setThermalRisk(0.08);
+      setDegradationVelocity(-0.008);
+      setVelocityHistory(prev => [...prev.slice(-15), -0.008]);
+      setSensor({ voc_raw: 31800, nox_raw: 19800, temperature_c: 28.5, humidity_pct: 66.0 });
+      setVocHistory(prev => [...prev.slice(-15), 31800]);
+      setTempHistory(prev => [...prev.slice(-15), 28.5]);
     } else if (preset === 'watch') {
       setRiskScore(0.48);
-      setRulHours(24.5);
-      setBioRisk(0.38);
+      setRulHours(14.5);
+      setBioRisk(0.35);
       setThermalRisk(0.48);
-      setDegradationVelocity(-0.085);
-      setVelocityHistory([-0.020, -0.035, -0.055, -0.070, -0.082, -0.085]);
-      setSensor({ voc_raw: 30200, nox_raw: 18900, temperature_c: 34.5, humidity_pct: 74.0 });
-      setVocHistory([31400, 31100, 30800, 30500, 30300, 30200]);
+      setDegradationVelocity(-0.140);
+      setVelocityHistory(prev => [...prev.slice(-15), -0.140]);
+      setSensor({ voc_raw: 30800, nox_raw: 19100, temperature_c: 35.5, humidity_pct: 73.0 });
+      setVocHistory(prev => [...prev.slice(-15), 30800]);
+      setTempHistory(prev => [...prev.slice(-15), 35.5]);
     } else if (preset === 'spoiled') {
       setRiskScore(0.89);
       setRulHours(0.0);
       setBioRisk(0.89);
-      setThermalRisk(0.45);
-      setDegradationVelocity(-0.320);
-      setVelocityHistory([-0.050, -0.110, -0.190, -0.260, -0.310, -0.320]);
-      setSensor({ voc_raw: 26500, nox_raw: 15400, temperature_c: 33.0, humidity_pct: 82.0 });
-      setVocHistory([30000, 29000, 28000, 27200, 26800, 26500]);
+      setThermalRisk(0.42);
+      setDegradationVelocity(-0.480);
+      setVelocityHistory(prev => [...prev.slice(-15), -0.480]);
+      setSensor({ voc_raw: 27800, nox_raw: 16200, temperature_c: 32.0, humidity_pct: 79.0 });
+      setVocHistory(prev => [...prev.slice(-15), 27800]);
     }
+    setLastUpdated(new Date());
+    setSecondsAgo(0);
   };
 
-  // -------------------------------------------------------------
-  // VISUALIZATION 1: DEGRADATION VELOCITY (VOC Trajectory + Derivative)
-  // -------------------------------------------------------------
-  const renderVelocityGraph = () => {
-    const width = 460;
-    const height = 150;
-    const pad = 24;
+  // Mathematically Scaled SVG Sparkline with Dynamic Color Gradients
+  const renderSVGChart = (data, strokeColor = '#10b981', minBound, maxBound) => {
+    if (!data || data.length < 2) return null;
+    const min = minBound ?? (Math.min(...data) * 0.995);
+    const max = maxBound ?? (Math.max(...data) * 1.005);
+    const range = (max - min) === 0 ? 1 : (max - min);
 
-    const data = velocityHistory;
-    const minVal = -0.350;
-    const maxVal = 0.020;
-    const range = maxVal - minVal;
-
-    const zeroY = height - pad - ((0 - minVal) / range) * (height - 2 * pad);
+    const width = 500;
+    const height = 140;
+    const pad = 12;
 
     const points = data.map((val, idx) => {
       const x = pad + (idx / (data.length - 1)) * (width - 2 * pad);
-      const y = height - pad - ((val - minVal) / range) * (height - 2 * pad);
+      const y = height - pad - ((val - min) / range) * (height - 2 * pad);
       return `${x},${y}`;
     }).join(' ');
 
-    const currentY = height - pad - ((degradationVelocity - minVal) / range) * (height - 2 * pad);
+    const safeColorId = strokeColor.replace(/[^a-zA-Z0-9]/g, '');
+    const gradId = `chartGrad-${safeColorId}-${data.length}`;
 
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="svg-canvas">
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
         <defs>
-          <linearGradient id="velGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#000000" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0.0" />
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
           </linearGradient>
         </defs>
-
-        {/* Zero baseline (0.000 Steady rate) */}
-        <line 
-          x1={pad} y1={zeroY} 
-          x2={width - pad} y2={zeroY} 
-          stroke="#cccccc" 
-          strokeWidth="1.2" 
-          strokeDasharray="4 4" 
-        />
-        <text x={pad} y={zeroY - 6} fontSize="10" fill="#888888" fontFamily="monospace">
-          0.000 baseline (steady)
-        </text>
-
-        {/* Accelerating zone marker */}
-        <text x={width - pad - 68} y={pad + 10} fontSize="10" fill="#dc2626" fontWeight="700">
-          accelerating &uarr;
-        </text>
-
-        {/* Area fill */}
         <polygon 
-          fill="url(#velGrad)" 
-          points={`${pad},${zeroY} ${points} ${width - pad},${zeroY}`} 
+          fill={`url(#${gradId})`} 
+          points={`${pad},${height - pad} ${points} ${width - pad},${height - pad}`} 
         />
-
-        {/* Velocity Derivative Curve */}
         <polyline
           fill="none"
-          stroke="#000000"
-          strokeWidth="2.8"
+          stroke={strokeColor}
+          strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
           points={points}
         />
-
-        {/* Current Point Marker */}
-        <circle
-          cx={width - pad}
-          cy={currentY}
-          r="5"
-          fill={Math.abs(degradationVelocity) > 0.08 ? '#dc2626' : '#000000'}
-          stroke="#ffffff"
-          strokeWidth="2"
-        />
-        <text 
-          x={width - pad - 8} 
-          y={currentY + 18} 
-          textAnchor="end" 
-          fontSize="10.5" 
-          fontWeight="700" 
-          fill="#000000"
-          fontFamily="monospace"
-        >
-          current: {degradationVelocity.toFixed(3)} ticks/s
-        </text>
-      </svg>
-    );
-  };
-
-  // -------------------------------------------------------------
-  // VISUALIZATION 2: DEGRADATION TRAJECTORY (0h – 72h Signature Curve)
-  // -------------------------------------------------------------
-  const renderTrajectoryGraph = () => {
-    const width = 500;
-    const height = 170;
-    const padX = 35;
-    const padY = 22;
-
-    const curvePoints = [
-      { t: 0, deg: 0.06 },
-      { t: 12, deg: 0.09 },
-      { t: 24, deg: 0.14 },
-      { t: 36, deg: 0.28 },
-      { t: 48, deg: 0.50 },
-      { t: 60, deg: 0.72 },
-      { t: 72, deg: 0.88 }
-    ];
-
-    const plotPoints = curvePoints.map(p => {
-      const x = padX + (p.t / 72) * (width - 2 * padX);
-      const y = height - padY - p.deg * (height - 2 * padY);
-      return `${x},${y}`;
-    }).join(' ');
-
-    const curT = Math.min(72, Math.max(0, 72 - rulHours));
-    const curX = padX + (curT / 72) * (width - 2 * padX);
-    const curY = height - padY - Math.min(1.0, riskScore) * (height - 2 * padY);
-
-    const critY = height - padY - 0.80 * (height - 2 * padY);
-    const onsetY = height - padY - 0.30 * (height - 2 * padY);
-
-    return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="svg-canvas">
-        <defs>
-          <linearGradient id="trajGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.20" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-          </linearGradient>
-        </defs>
-
-        {/* 80% Model Critical Threshold Line */}
-        <line 
-          x1={padX} y1={critY} 
-          x2={width - padX} y2={critY} 
-          stroke="#ef4444" 
-          strokeWidth="1.2" 
-          strokeDasharray="4 4" 
-        />
-        <text x={padX + 4} y={critY - 5} fontSize="9.5" fill="#ef4444" fontWeight="700">
-          Model critical threshold (80%)
-        </text>
-
-        {/* 30% Detected Onset Boundary */}
-        <line 
-          x1={padX} y1={onsetY} 
-          x2={width - padX} y2={onsetY} 
-          stroke="#d97706" 
-          strokeWidth="1" 
-          strokeDasharray="3 3" 
-        />
-        <text x={padX + 4} y={onsetY - 4} fontSize="9.5" fill="#d97706" fontWeight="600">
-          Detected onset boundary (30%)
-        </text>
-
-        {/* Axes */}
-        <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="#000000" strokeWidth="1.5" />
-        <line x1={padX} y1={padY} x2={padX} y2={height - padY} stroke="#000000" strokeWidth="1.5" />
-
-        {/* X-Axis Ticks */}
-        {[0, 12, 24, 36, 48, 60, 72].map(hr => {
-          const x = padX + (hr / 72) * (width - 2 * padX);
-          return (
-            <g key={hr}>
-              <line x1={x} y1={height - padY} x2={x} y2={height - padY + 4} stroke="#000000" strokeWidth="1" />
-              <text x={x} y={height - padY + 14} fontSize="9.5" textAnchor="middle" fill="#666666" fontFamily="monospace">
-                {hr}h
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Area fill */}
-        <polygon 
-          fill="url(#trajGrad)" 
-          points={`${padX},${height - padY} ${plotPoints} ${width - padX},${height - padY}`} 
-        />
-
-        {/* Sigmoidal Kinetic Curve */}
-        <polyline
-          fill="none"
-          stroke="#000000"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={plotPoints}
-        />
-
-        {/* Baseline Marker */}
-        <circle cx={padX} cy={height - padY - 0.06 * (height - 2 * padY)} r="3.5" fill="#000000" />
-        <text x={padX + 6} y={height - padY - 0.06 * (height - 2 * padY) - 5} fontSize="9" fill="#555555" fontWeight="600">
-          Baseline
-        </text>
-
-        {/* Current Active Point */}
-        <circle
-          cx={curX}
-          cy={curY}
-          r="6"
-          fill={isSpoiled ? '#ef4444' : isWatch ? '#f59e0b' : '#10b981'}
-          stroke="#ffffff"
-          strokeWidth="2.5"
-        />
-        <text 
-          x={curX} 
-          y={curY - 10} 
-          textAnchor={curX > width - 100 ? 'end' : 'middle'} 
-          fontSize="10" 
-          fontWeight="800" 
-          fill="#000000"
-          fontFamily="monospace"
-        >
-          NOW ({Math.round(riskScore * 100)}%)
-        </text>
+        {data.length > 0 && (
+          <circle
+            cx={width - pad}
+            cy={height - pad - ((data[data.length - 1] - min) / range) * (height - 2 * pad)}
+            r="5"
+            fill={strokeColor}
+            stroke="#ffffff"
+            strokeWidth="2.5"
+          />
+        )}
       </svg>
     );
   };
 
   return (
     <div className="app-viewport">
-      {/* ================================================================ */}
-      {/* 1. TOP MONITORING HEADER (EXECUTIVE 2-SECOND STATE UNDERSTANDING)  */}
-      {/* ================================================================ */}
-      <header className="monitoring-header-card">
-        <div className="monitoring-meta-row">
-          <div className="meta-left">
-            <h1 className="monitoring-title">TOMATO &mdash; LIVE MONITORING</h1>
-            <div className="device-status-sub">
-              <span className="pulse-dot" />
-              <span>Device online &middot; Updated {lastUpdatedSec} sec ago &middot; {deviceId}</span>
-            </div>
-          </div>
-
-          <div className="meta-right">
-            <div className="preset-toggle-group">
-              <button 
-                className={`preset-btn ${activePreset === 'fresh' ? 'active' : ''}`}
-                onClick={() => applyPreset('fresh')}
-              >
-                Fresh
-              </button>
-              <button 
-                className={`preset-btn ${activePreset === 'watch' ? 'active' : ''}`}
-                onClick={() => applyPreset('watch')}
-              >
-                Watch
-              </button>
-              <button 
-                className={`preset-btn ${activePreset === 'spoiled' ? 'active' : ''}`}
-                onClick={() => applyPreset('spoiled')}
-              >
-                Spoiled
-              </button>
-              <button className="sync-btn" onClick={fetchLiveStatus} title="Poll live AWS SQS telemetry">
-                <RefreshCw size={12} />
-              </button>
-            </div>
-          </div>
+      {/* Clean Header with Page Switcher Navigation */}
+      <header className="brand-header">
+        <div className="brand-left">
+          <h1 className="brand-title">FreshTrace</h1>
         </div>
 
-        {/* The 3 Major Numbers */}
-        <div className="major-numbers-strip">
-          {/* Major 1: Spoilage Risk */}
-          <div className={`major-stat-box ${isSpoiled ? 'box-spoiled' : isWatch ? 'box-watch' : 'box-fresh'}`}>
-            <div className="stat-label-flex">
-              <span>SPOILAGE RISK</span>
-              <span className="badge-model-tag">MODEL OUTPUT</span>
-            </div>
-            <div className="stat-val-row">
-              <span className="stat-big-number">{Math.round(riskScore * 100)}%</span>
-              <span className="stat-category-pill">{getRiskCategory()}</span>
-            </div>
-            <div className="stat-subtext">
-              {getStatusHeadline()}
-            </div>
-          </div>
+        {/* Dedicated Separate Pages Navigation */}
+        <nav className="nav-tab-container">
+          <button 
+            className={`nav-tab-btn ${activeTab === 'factors' ? 'active' : ''}`}
+            onClick={() => setActiveTab('factors')}
+          >
+            <Activity size={16} />
+            <span>Core Spoilage Factors</span>
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'telemetry' ? 'active' : ''}`}
+            onClick={() => setActiveTab('telemetry')}
+          >
+            <Wind size={16} />
+            <span>Telemetry Stream</span>
+          </button>
+        </nav>
 
-          {/* Major 2: Shelf Life */}
-          <div className="major-stat-box">
-            <div className="stat-label-flex">
-              <span>SHELF LIFE</span>
-              <span className="badge-model-tag">MODEL OUTPUT</span>
-            </div>
-            <div className="stat-val-row">
-              {isSpoiled ? (
-                <span className="stat-big-number spoiled-red">0.0 h</span>
-              ) : (
-                <span className="stat-big-number">{rulHours.toFixed(1)} h</span>
-              )}
-              <span className="stat-ci-pill">&plusmn;{(rulHours * 0.15).toFixed(1)} h</span>
-            </div>
-            <div className="stat-subtext">
-              {isSpoiled ? 'Terminal degradation boundary reached' : `95% CI · ${(rulHours * 0.85).toFixed(1)}–${(rulHours * 1.15).toFixed(1)} h`}
-            </div>
-          </div>
-
-          {/* Major 3: Degradation Velocity */}
-          <div className="major-stat-box">
-            <div className="stat-label-flex">
-              <span>DEGRADATION</span>
-              <span className="badge-model-tag">MODEL OUTPUT</span>
-            </div>
-            <div className="stat-val-row">
-              <span className="stat-big-number">{degradationVelocity.toFixed(3)}</span>
-              <span className="stat-unit-pill">ticks/sec</span>
-            </div>
-            <div className="stat-subtext">
-              {Math.abs(degradationVelocity) > 0.08 ? 'Rate accelerating (>3.2x)' : 'Steady baseline rate'}
-            </div>
+        <div className="header-status-group">
+          <div className="live-pill">
+            <span className="live-dot" />
+            <span>AWS IoT Core Active · {deviceId}</span>
           </div>
         </div>
       </header>
 
       {/* ================================================================ */}
-      {/* 2. LIVE SENSOR STRIP (CONNECTS PHYSICAL HARDWARE TO MODEL)       */}
+      {/* PAGE 1: CORE SPOILAGE FACTORS (DEDICATED VIEW)                   */}
       {/* ================================================================ */}
-      <section className="sensor-telemetry-strip">
-        <div className="strip-title-row">
-          <div className="strip-title-left">
-            <span className="strip-title">Sensor Telemetry</span>
-            <span className="badge-measured-tag">MEASURED</span>
-          </div>
-          <div className="strip-info-right">
-            <span>Sensirion SGP41 (MOX) + SHT40 (Cold-Chain Probe) &middot; AWS IoT Core MQTT</span>
-          </div>
-        </div>
+      {activeTab === 'factors' && (
+        <div className="page-view animate-fade-in">
+          <section className="factors-section">
+            {/* Top Grid: Spoilage Risk Score (Hero Centerpiece) & Remaining Shelf Life */}
+            <div className="factors-hero-grid">
+              {/* Spoilage Risk Score (Centerpiece Hero Card with Translucent Dynamic Color) */}
+              <div className={getRiskCardClass()}>
+                <div>
+                  <div className="factor-card-title">
+                    <span>Spoilage Risk Score</span>
+                    {isSpoiled ? <AlertOctagon size={20} /> : isWatch ? <AlertTriangle size={20} /> : <ShieldCheck size={20} />}
+                  </div>
 
-        <div className="telemetry-items-row">
-          <div className="telemetry-item">
-            <Thermometer size={16} className="item-icon" />
-            <span className="item-k">Temperature:</span>
-            <strong className="item-v">{sensor.temperature_c.toFixed(1)}°C</strong>
-          </div>
+                  <div className="risk-metric-big">
+                    {Math.round(riskScore * 100)}%
+                  </div>
 
-          <div className="telemetry-item">
-            <Droplets size={16} className="item-icon" />
-            <span className="item-k">Humidity:</span>
-            <strong className="item-v">{sensor.humidity_pct.toFixed(1)}% RH</strong>
-          </div>
+                  <div className="card-meta-text">
+                    {isSpoiled 
+                      ? `The food is spoiled. Spoilage risk has reached ${Math.round(riskScore * 100)}%. It is no longer safe to eat or sell.`
+                      : isWatch 
+                      ? `Use caution. The food is starting to deteriorate, with a ${Math.round(riskScore * 100)}% risk of spoilage.`
+                      : `The food is fresh and safe to eat. There is an ${Math.round(riskScore * 100)}% risk that it is spoiled.`
+                    }
+                  </div>
+                </div>
 
-          <div className="telemetry-item">
-            <Wind size={16} className="item-icon" />
-            <span className="item-k">VOC Raw:</span>
-            <strong className="item-v">{sensor.voc_raw.toLocaleString()} ticks</strong>
-          </div>
-
-          <div className="telemetry-item">
-            <Radio size={16} className="item-icon" />
-            <span className="item-k">NOx Raw:</span>
-            <strong className="item-v">{sensor.nox_raw.toLocaleString()} ticks</strong>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* 3. SPOILAGE PROGRESSION TIMELINE                                 */}
-      {/* ================================================================ */}
-      <section className="content-card progression-card">
-        <div className="card-header-flex">
-          <div className="header-left-flex">
-            <span className="section-title">Spoilage Progression</span>
-            <span className="badge-model-tag">MODEL OUTPUT</span>
-          </div>
-          <div className="tooltip-container">
-            <span className="tooltip-trigger">ⓘ</span>
-            <div className="tooltip-box">
-              Sequential degradation state tracking using dual Kalman filtering and CUSUM cumulative sum change-point detection.
-            </div>
-          </div>
-        </div>
-
-        {/* Stepper Timeline */}
-        <div className="timeline-stepper">
-          {/* Step 0: FRESH */}
-          <div className={`step-node ${progressionStep >= 0 ? 'active' : ''}`}>
-            <div className="node-marker">
-              <span className="dot" />
-              {progressionStep === 0 && <span className="now-flag">NOW</span>}
-            </div>
-            <span className="node-label">FRESH</span>
-          </div>
-          <div className={`step-line ${progressionStep >= 1 ? 'filled' : ''}`} />
-
-          {/* Step 1: WATCH */}
-          <div className={`step-node ${progressionStep >= 1 ? 'active' : ''}`}>
-            <div className="node-marker">
-              <span className="dot" />
-              {progressionStep === 1 && <span className="now-flag">NOW</span>}
-            </div>
-            <span className="node-label">WATCH</span>
-          </div>
-          <div className={`step-line ${progressionStep >= 2 ? 'filled' : ''}`} />
-
-          {/* Step 2: ONSET CANDIDATE */}
-          <div className={`step-node ${progressionStep >= 2 ? 'active' : ''}`}>
-            <div className="node-marker">
-              <span className="dot" />
-              {progressionStep === 2 && <span className="now-flag">NOW</span>}
-            </div>
-            <span className="node-label">ONSET CANDIDATE</span>
-          </div>
-          <div className={`step-line ${progressionStep >= 3 ? 'filled' : ''}`} />
-
-          {/* Step 3: SPOILAGE ONSET */}
-          <div className={`step-node ${progressionStep >= 3 ? 'active' : ''}`}>
-            <div className="node-marker">
-              <span className="dot" />
-              {progressionStep === 3 && <span className="now-flag">NOW</span>}
-            </div>
-            <span className="node-label">SPOILAGE ONSET</span>
-          </div>
-        </div>
-
-        <div className="timeline-meta-footer">
-          <div>
-            <span className="meta-label">Current state: </span>
-            <strong className="meta-value">{getStatusHeadline()}</strong>
-          </div>
-          <div>
-            <span className="meta-label">Spoilage onset: </span>
-            <strong className="meta-value">
-              {progressionStep >= 3 ? 'Detected (Critical Boundary)' : progressionStep === 2 ? 'Candidate flag raised' : 'Not detected'}
-            </strong>
-          </div>
-          <div>
-            <span className="meta-label">Model critical threshold: </span>
-            <strong className="meta-value">80%</strong>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* 4. DUAL ANALYTICS: DEGRADATION VELOCITY & RISK ATTRIBUTION       */}
-      {/* ================================================================ */}
-      <div className="analytics-grid-2col">
-        {/* Panel 1: Degradation Velocity Graph */}
-        <section className="content-card">
-          <div className="card-header-flex">
-            <div className="header-left-flex">
-              <span className="section-title">Degradation Velocity</span>
-              <span className="badge-model-tag">MODEL OUTPUT</span>
-            </div>
-            <div className="tooltip-container">
-              <span className="tooltip-trigger">ⓘ</span>
-              <div className="tooltip-box">
-                Derivative of filtered SGP41 sensor resistance ticks over a 60-second rolling window showing rate of chemical decay.
+                <div className="card-hero-footer">
+                  <span>Status:</span>
+                  <strong>{isSpoiled ? "Spoiled" : isWatch ? "Needs Attention" : "Fresh & Safe"}</strong>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="graph-container">
-            {renderVelocityGraph()}
-          </div>
+              {/* Remaining Useful Shelf Life (Cool Blue Accent Card) */}
+              <div className="factor-card factor-card-shelflife">
+                <div>
+                  <div className="factor-card-title">
+                    <span style={{ color: '#0369a1' }}>Remaining Useful Shelf Life</span>
+                    <Clock size={18} color="#0284c7" />
+                  </div>
 
-          <div className="velocity-context-row">
-            <span className="context-item">
-              <strong>Cold Storage (4°C):</strong> Slows rate by ~78%
-            </span>
-            <span className="context-item">
-              <strong>Heat Abuse (&gt;35°C):</strong> Accelerates rate by 3.2x
-            </span>
-          </div>
-        </section>
+                  {isSpoiled ? (
+                    <div className="spoiled-state-banner">
+                      <div className="spoiled-state-title">
+                        <AlertOctagon size={24} />
+                        <span>SPOILED</span>
+                      </div>
+                      <div className="spoiled-state-desc">
+                        Shelf life has expired. The food is spoiled and no longer safe to eat.
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="shelf-life-metric">
+                        {rulHours.toFixed(1)} <span className="shelf-life-unit">Hours Left</span>
+                      </div>
+                      <div className="confidence-chip-blue">
+                        <span>Expected window:</span>
+                        <strong>{(rulHours * 0.85).toFixed(0)} to {(rulHours * 1.15).toFixed(0)} hours</strong>
+                      </div>
+                      <div className="card-meta-text" style={{ marginTop: '12px' }}>
+                        How much time you have left before this food spoils under current storage conditions.
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-        {/* Panel 2: Visual Risk Attribution */}
-        <section className="content-card">
-          <div className="card-header-flex">
-            <div className="header-left-flex">
-              <span className="section-title">Risk Attribution</span>
-              <span className="badge-model-tag">MODEL OUTPUT</span>
-            </div>
-            <div className="tooltip-container">
-              <span className="tooltip-trigger">ⓘ</span>
-              <div className="tooltip-box">
-                Direct attribution separating volatile organic gas emission kinetics from accumulated Arrhenius thermal exposure.
-              </div>
-            </div>
-          </div>
-
-          <div className="attribution-comparison-box">
-            {/* VOC-Associated Signal */}
-            <div className="attrib-bar-group">
-              <div className="attrib-label-row">
-                <span className="attrib-name">VOC-associated signal</span>
-                <span className="attrib-val">{Math.round(bioRisk * 100)}%</span>
-              </div>
-              <div className="attrib-track">
-                <div className="attrib-fill-black" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
+                <div className="card-footer-subtle">
+                  <span>Safe Limit:</span>
+                  <strong>Becomes unsafe when risk crosses 80%</strong>
+                </div>
               </div>
             </div>
 
-            {/* Thermal Abuse Signal */}
-            <div className="attrib-bar-group">
-              <div className="attrib-label-row">
-                <span className="attrib-name">Thermal abuse signal</span>
-                <span className="attrib-val">{Math.round(thermalRisk * 100)}%</span>
+            {/* Middle Section: Degradation Velocity (Dedicated Graph + Condition Scenarios) */}
+            <div className="factor-card factor-card-velocity" style={{ marginTop: '20px' }}>
+              <div className="factor-card-title">
+                <span style={{ color: '#b45309' }}>Degradation Velocity</span>
+                <Activity size={18} color="#d97706" />
               </div>
-              <div className="attrib-track">
-                <div className="attrib-fill-black" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
+
+              <div className="velocity-top-flex">
+                <div>
+                  <div className="velocity-readout-row">
+                    <span className="velocity-number">
+                      {degradationVelocity.toFixed(3)}
+                    </span>
+                    <span className="velocity-unit">ticks/sec</span>
+                    <span className="velocity-status-amber">
+                      {Math.abs(degradationVelocity) > 0.1 ? 'Spoiling Fast' : 'Aging Slowly & Steady'}
+                    </span>
+                  </div>
+                  <div className="card-meta-text">
+                    Shows how fast the food is breaking down right now based on gas and heat trends.
+                  </div>
+                </div>
+
+                {/* Embedded Velocity Sparkline Graph */}
+                <div className="velocity-chart-container">
+                  <div className="velocity-chart-header">
+                    <span>Aging Speed Curve (Live Trend)</span>
+                    <span className="velocity-chart-tag">{degradationVelocity.toFixed(3)} / sec</span>
+                  </div>
+                  <div className="velocity-svg-wrapper">
+                    {renderSVGChart(velocityHistory, '#d97706')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Conditions & Forecast Scenarios */}
+              <div className="scenario-grid-3">
+                <div className="scenario-card scenario-card-cold">
+                  <div className="scenario-card-head">
+                    <Snowflake size={16} color="#0284c7" />
+                    <strong>Kept in Fridge (4°C)</strong>
+                  </div>
+                  <p>Spoilage slows down drastically (~78%). Stays fresh up to <strong>5 times longer</strong>.</p>
+                </div>
+
+                <div className="scenario-card scenario-card-current">
+                  <div className="scenario-card-head">
+                    <Leaf size={16} color="#15803d" />
+                    <strong>Current Conditions ({sensor.temperature_c.toFixed(1)}°C)</strong>
+                  </div>
+                  <p>Ages steadily at normal speed. Follow the remaining shelf life estimate.</p>
+                </div>
+
+                <div className="scenario-card scenario-card-hot">
+                  <div className="scenario-card-head">
+                    <SunMedium size={16} color="#b91c1c" />
+                    <strong>If Left in Heat (&gt;35°C)</strong>
+                  </div>
+                  <p>Spoilage accelerates fast (3x). Will spoil within <strong>4 to 6 hours</strong>.</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="attribution-dominant-callout">
-            <div>
-              <span className="callout-label">Dominant signal: </span>
-              <strong>{bioRisk >= thermalRisk ? 'VOC-associated degradation signal' : 'Thermal abuse signal'}</strong>
+            {/* Bottom Section: Thermal vs. Biochemical Risk (At Last, with Vibrant Color Meters) */}
+            <div className="factor-card factor-card-risks" style={{ marginTop: '20px' }}>
+              <div className="factor-card-title">
+                <span style={{ color: '#047857' }}>Thermal vs. Biochemical Risk</span>
+                <Layers size={18} color="#059669" />
+              </div>
+
+              <div className="vector-split-grid">
+                {/* Biochemical Rotting Gas Risk */}
+                <div className="vector-color-box vector-box-bio">
+                  <div className="vector-row-header">
+                    <div className="vector-title-group">
+                      <Wind size={16} color="#059669" />
+                      <span className="vector-name-colored" style={{ color: '#047857' }}>Rotting Gas Risk (Biochemical)</span>
+                    </div>
+                    <span className="vector-percent-green">{Math.round(bioRisk * 100)}%</span>
+                  </div>
+                  <div className="vector-sentence">
+                    Measures natural gases released when bacteria start decomposing the food.
+                  </div>
+                  <div className="meter-track">
+                    <div className="meter-fill-bio-green" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
+                  </div>
+                </div>
+
+                {/* Thermal Heat Damage Risk */}
+                <div className="vector-color-box vector-box-thermal">
+                  <div className="vector-row-header">
+                    <div className="vector-title-group">
+                      <Thermometer size={16} color="#dc2626" />
+                      <span className="vector-name-colored" style={{ color: '#b91c1c' }}>Heat Damage Risk (Thermal)</span>
+                    </div>
+                    <span className="vector-percent-red">{Math.round(thermalRisk * 100)}%</span>
+                  </div>
+                  <div className="vector-sentence">
+                    Measures heat damage built up over time from warm storage environments.
+                  </div>
+                  <div className="meter-track">
+                    <div className="meter-fill-thermal-red" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-footer-subtle" style={{ marginTop: '16px' }}>
+                <span>Main cause of spoilage:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>
+                  {bioRisk > thermalRisk ? "Rotting gas buildup from aging" : "Heat exposure from warm storage"}
+                </strong>
+              </div>
             </div>
-            <div className="callout-sub">
-              Derived from changes in VOC/NOx measurements relative to the tomato baseline.
+          </section>
+
+          {/* SECTION 4: INTERACTIVE CONTROLS & LIVE SIMULATION */}
+          <section className="interactive-toolbar">
+            <div className="toolbar-header-flex">
+              <div className="toolbar-title">
+                <Sliders size={18} color="#000000" />
+                <span>Interactive Scenarios &amp; Live Simulation</span>
+              </div>
+
+              <div className="preset-button-row">
+                <button className="action-btn" onClick={() => applyPreset('fresh')}>
+                  <span>Fresh Food (12% Risk)</span>
+                </button>
+                <button className="action-btn" onClick={() => applyPreset('watch')}>
+                  <span>Warning Level (48% Risk)</span>
+                </button>
+                <button className="action-btn" onClick={() => applyPreset('spoiled')}>
+                  <span>Spoiled Food (89% Risk)</span>
+                </button>
+                <button className="action-btn" onClick={fetchLiveStatus} title="Sync with live stream">
+                  <RefreshCw size={13} />
+                  <span>Reset / Live Sync</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
+
+            {/* Live Interactive Temperature Slider */}
+            <div className="interactive-slider-row">
+              <span className="slider-label">
+                Simulate Temperature Change:
+              </span>
+              <input 
+                type="range" 
+                min="4" 
+                max="42" 
+                step="0.5"
+                value={sensor.temperature_c}
+                onChange={(e) => handleTempSlider(e.target.value)}
+                className="slider-input" 
+              />
+              <span className="slider-value-display">
+                {sensor.temperature_c.toFixed(1)}°C
+              </span>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ================================================================ */}
-      {/* 5. DEGRADATION TRAJECTORY (0h – 72h SIGNATURE KINETIC MODEL)     */}
+      {/* PAGE 2: TELEMETRY STREAM & SENSOR CURVES (DEDICATED VIEW)        */}
       {/* ================================================================ */}
-      <section className="content-card trajectory-card">
-        <div className="card-header-flex">
-          <div className="header-left-flex">
-            <span className="section-title">Degradation Trajectory (0h &ndash; 72h)</span>
-            <span className="badge-model-tag">MODEL OUTPUT</span>
-          </div>
-          <div className="tooltip-container">
-            <span className="tooltip-trigger">ⓘ</span>
-            <div className="tooltip-box">
-              Empirical degradation progression modeled from Arrhenius thermal integration and real-time SGP41 volatile baseline shifts.
+      {activeTab === 'telemetry' && (
+        <div className="page-view animate-fade-in">
+          {/* SENSOR LIVE UPDATE TIMESTAMP BANNER */}
+          <div className="telemetry-live-banner">
+            <div className="telemetry-timestamp-group">
+              <span className="live-ping-dot" />
+              <span className="telemetry-updated-text">
+                Sensor data updated: <strong>{secondsAgo === 0 ? 'Just now' : `${secondsAgo}s ago`}</strong> ({lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})
+              </span>
             </div>
+            <div className="telemetry-actions-group">
+              <span className="telemetry-device-tag">Sensirion SGP41 + SHT40 Hardware Active</span>
+              <button className="action-btn" onClick={fetchLiveStatus} title="Refresh sensor data">
+                <RefreshCw size={12} />
+                <span>Refresh Now</span>
+              </button>
+            </div>
+          </div>
+
+          {/* SENSOR METRICS 4-GRID WITH LOGICAL COLOR ACCENTS */}
+          <section className="sensor-section">
+            <div className="sensor-grid-4">
+              {/* VOC Raw Sensor (Emerald Green) */}
+              <div className="sensor-metric-card sensor-card-voc">
+                <div className="sensor-name">
+                  <span style={{ color: '#059669' }}>VOC Gas Sensor</span>
+                  <Wind size={16} color="#059669" />
+                </div>
+                <div className="sensor-numeric-value">{sensor.voc_raw.toLocaleString()}</div>
+                <div className="sensor-sub-caption">Rotting gases in storage air</div>
+              </div>
+
+              {/* NOx Raw Ticks (Violet / Purple) */}
+              <div className="sensor-metric-card sensor-card-nox">
+                <div className="sensor-name">
+                  <span style={{ color: '#7c3aed' }}>NOx Gas Sensor</span>
+                  <Radio size={16} color="#7c3aed" />
+                </div>
+                <div className="sensor-numeric-value">{sensor.nox_raw.toLocaleString()}</div>
+                <div className="sensor-sub-caption">Nitrogen compounds in air</div>
+              </div>
+
+              {/* Temperature (Warm Coral / Orange) */}
+              <div className="sensor-metric-card sensor-card-temp">
+                <div className="sensor-name">
+                  <span style={{ color: '#ea580c' }}>Storage Temperature</span>
+                  <Thermometer size={16} color="#ea580c" />
+                </div>
+                <div className="sensor-numeric-value">{sensor.temperature_c.toFixed(1)}°C</div>
+                <div className="sensor-sub-caption">Cold-chain storage reading</div>
+              </div>
+
+              {/* Humidity (Sky Blue) */}
+              <div className="sensor-metric-card sensor-card-humidity">
+                <div className="sensor-name">
+                  <span style={{ color: '#0284c7' }}>Relative Humidity</span>
+                  <Droplets size={16} color="#0284c7" />
+                </div>
+                <div className="sensor-numeric-value">{sensor.humidity_pct.toFixed(1)}%</div>
+                <div className="sensor-sub-caption">Moisture level around produce</div>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION 3: SENSOR CURVES */}
+          <section className="curves-section">
+            <div className="curves-grid-2">
+              {/* VOC Gas Degradation Curve */}
+              <div className="curve-chart-card curve-card-voc-accent">
+                <div className="curve-card-top">
+                  <div>
+                    <div className="curve-main-title">Gas Level Curve Over Time</div>
+                    <div className="curve-subtitle-desc">Measures release of decomposition gases</div>
+                  </div>
+                  <div className="curve-badge curve-badge-green">
+                    <span className="badge-pulse-green" />
+                    <span>{sensor.voc_raw.toLocaleString()} ticks</span>
+                  </div>
+                </div>
+                <div className="chart-svg-box">
+                  {renderSVGChart(vocHistory, '#10b981')}
+                </div>
+              </div>
+
+              {/* Thermal Abuse Timeline */}
+              <div className="curve-chart-card curve-card-temp-accent">
+                <div className="curve-card-top">
+                  <div>
+                    <div className="curve-main-title">Storage Temperature History</div>
+                    <div className="curve-subtitle-desc">Tracks temperature stability and heat spikes</div>
+                  </div>
+                  <div className="curve-badge curve-badge-red">
+                    <span className="badge-pulse-red" />
+                    <span>{sensor.temperature_c.toFixed(1)}°C</span>
+                  </div>
+                </div>
+                <div className="chart-svg-box">
+                  {renderSVGChart(tempHistory, '#ef4444', 15, 45)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Telemetry Hardware Metadata & Controls */}
+          <div className="telemetry-footer-bar">
+            <div className="telemetry-footer-info">
+              <span className="footer-tag">Sensirion SGP41 (Gas Sensor) + Sensirion SHT40 (Temp &amp; Humidity)</span>
+              <span className="footer-sub">Real-time data stream via AWS IoT Core &rarr; SQS &rarr; Cloud Database</span>
+            </div>
+            <button className="action-btn" onClick={fetchLiveStatus} title="Sync with live stream">
+              <RefreshCw size={14} />
+              <span>Sync Sensor Feed</span>
+            </button>
           </div>
         </div>
-
-        <div className="trajectory-graph-box">
-          {renderTrajectoryGraph()}
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* 6. INTERACTIVE AMBIENT STRESS SIMULATION TOOLBAR                 */}
-      {/* ================================================================ */}
-      <section className="content-card simulation-card">
-        <div className="slider-control-row">
-          <span className="slider-label">
-            <Sliders size={16} />
-            <span>Test Ambient Temperature:</span>
-          </span>
-          <input 
-            type="range" 
-            min="4" 
-            max="42" 
-            step="0.5"
-            value={sensor.temperature_c}
-            onChange={(e) => handleTempSlider(e.target.value)}
-            className="slider-input" 
-          />
-          <span className="slider-value-box">
-            {sensor.temperature_c.toFixed(1)}°C
-          </span>
-        </div>
-      </section>
+      )}
     </div>
   );
 }
