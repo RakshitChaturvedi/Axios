@@ -214,16 +214,10 @@ export default function App() {
 
   return (
     <div className="app-viewport">
-      {/* Clean, Non-Generic Header */}
+      {/* Clean Header */}
       <header className="brand-header">
         <div className="brand-left">
-          <div className="brand-emblem">
-            <Leaf size={22} />
-          </div>
-          <div className="brand-title-group">
-            <h1>Axios</h1>
-            <div className="brand-subtitle">Real-Time Biochemical Spoilage Intelligence Platform</div>
-          </div>
+          <h1 className="brand-title">FreshTrace</h1>
         </div>
 
         <div className="header-status-group">
@@ -234,9 +228,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* ================================================================ */}
-      {/* SECTION 1: THE 5 PRIMARY CORE FACTORS (CLEARLY VISIBLE FIRST)    */}
-      {/* ================================================================ */}
       {/* ================================================================ */}
       {/* SECTION 1: THE 5 PRIMARY CORE FACTORS (CLEARLY VISIBLE FIRST)    */}
       {/* ================================================================ */}

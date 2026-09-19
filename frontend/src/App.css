@@ -20,35 +20,14 @@
 .brand-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
 }
 
-/* Bold Black Emblem */
-.brand-emblem {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  background: #000000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-}
-
-.brand-title-group h1 {
-  font-size: var(--font-xl);
+.brand-title {
+  font-size: var(--font-2xl);
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--text-black);
-  line-height: 1.15;
-}
-
-.brand-subtitle {
-  font-size: var(--font-xs);
-  color: var(--text-tertiary);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: #000000;
+  line-height: 1;
 }
 
 .header-status-group {
