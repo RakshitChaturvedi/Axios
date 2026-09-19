@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg-main: #f8faf9;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f4f6f5;
+  --border-light: #e5e9e6;
+  --border-subtle: #f0f2f1;
+  
+  --text-primary: #17201c;
+  --text-secondary: #4b5752;
+  --text-muted: #798681;
+  
+  --green-primary: #107a48;
+  --green-light: #ebf7f0;
+  --green-border: #bce6cf;
+  
+  --amber-primary: #b45309;
+  --amber-light: #fef3c7;
+  --amber-border: #fde68a;
+  
+  --red-primary: #b91c1c;
+  --red-light: #fef2f2;
+  --red-border: #fecaca;
+
+  --accent-tomato: #dc2626;
+  --accent-paneer: #ca8a04;
+  --accent-herb: #15803d;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
