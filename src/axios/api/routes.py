@@ -1,63 +1,216 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import json
+import asyncio
+from datetime import datetime
+from typing import List, Optional
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
-app = FastAPI(title="Axios API")
+from axios.persistence.db import SessionLocal, get_db, init_db
+from axios.persistence.models import SessionModel, RawTelemetryModel, EventModel, StateSnapshotModel
+from axios.inference_service import InferenceEngineService
 
-# In a real setup, these would query the SQLAlchemy models above.
-# For the hackathon demo, we will mock the primary state object response.
+app = FastAPI(title="Axios Biochemical Spoilage Intelligence API", version="0.2.0")
+
+# Enable CORS for frontend clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global inference engine instance
+inference_engine = InferenceEngineService()
+
+# Global list of connected stream subscribers for live push
+subscribers: List[asyncio.Queue] = []
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat() + "Z"}
 
 @app.get("/devices")
-def get_devices():
-    return {"devices": ["FreshTrace-Node-01"]}
+def get_devices(db: Session = Depends(get_db)):
+    sessions = db.query(SessionModel).all()
+    devices = list(set([s.device_id for s in sessions]))
+    if not devices:
+        devices = ["FreshTrace-Node-01"]
+    return {"devices": devices}
 
 @app.get("/devices/{device_id}/status")
-def get_device_status(device_id: str):
-    """Returns the primary state object for the dashboard[cite: 1, 2]."""
-    if device_id != "FreshTrace-Node-01":
-        raise HTTPException(status_code=404, detail="Device not found")
-        
+def get_device_status(device_id: str, db: Session = Depends(get_db)):
+    """Returns the primary real-time state object for the dashboard."""
+    # Check in-memory active state first
+    if device_id in inference_engine.last_known_state:
+        state = inference_engine.last_known_state[device_id]
+        return {
+            "device_id": device_id,
+            "food_type": state["food_type"],
+            "state": state["state"],
+            "spoilage_risk": state["overall_risk"],
+            "dominant_risk": state["dominant_risk"],
+            "risk": {
+                "biochemical": state["biochemical_risk"],
+                "thermal": state["thermal_risk"],
+                "overall": state["overall_risk"],
+                "dominant": state["dominant_risk"]
+            },
+            "remaining_useful_life": {
+                "hours": state["rul_hours"],
+                "lower": state["rul_lower"],
+                "upper": state["rul_upper"]
+            },
+            "sensor": {
+                "temperature_c": state["temperature_c"],
+                "humidity_pct": state["humidity_pct"],
+                "voc_raw": state["voc_raw"],
+                "nox_raw": state["nox_raw"]
+            },
+            "last_updated": state["timestamp"]
+        }
+
+    # Otherwise query the latest snapshot from DB
+    session_record = db.query(SessionModel).filter_by(device_id=device_id).order_by(SessionModel.started_at.desc()).first()
+    if not session_record:
+        # Default empty state for known device
+        return {
+            "device_id": device_id,
+            "food_type": "paneer",
+            "state": "STABLE",
+            "spoilage_risk": 0.0,
+            "dominant_risk": "LOW_RISK",
+            "risk": {"biochemical": 0.0, "thermal": 0.0, "overall": 0.0, "dominant": "LOW_RISK"},
+            "remaining_useful_life": {"hours": 72.0, "lower": 61.2, "upper": 72.0},
+            "sensor": {"temperature_c": 29.69, "humidity_pct": 68.04, "voc_raw": 249, "nox_raw": 0},
+            "last_updated": datetime.utcnow().isoformat() + "Z"
+        }
+
+    latest_snapshot = db.query(StateSnapshotModel).filter_by(session_id=session_record.session_id).order_by(StateSnapshotModel.id.desc()).first()
+    latest_telemetry = db.query(RawTelemetryModel).filter_by(session_id=session_record.session_id).order_by(RawTelemetryModel.id.desc()).first()
+
     return {
         "device_id": device_id,
-        "food_type": "tomato",
-        "state": "WATCH",
-        "spoilage_risk": 0.230,
-        "spoilage_onset": {
-            "detected": False,
-            "timestamp": None,
-            "confidence": 0.0
+        "food_type": session_record.food_type,
+        "state": latest_snapshot.spoilage_state if latest_snapshot else "STABLE",
+        "spoilage_risk": latest_snapshot.overall_risk if latest_snapshot else 0.0,
+        "dominant_risk": "BIOCHEMICAL_DOMINANT" if (latest_snapshot and latest_snapshot.overall_risk > 0.3) else "LOW_RISK",
+        "risk": {
+            "biochemical": latest_snapshot.overall_risk if latest_snapshot else 0.0,
+            "thermal": 0.0,
+            "overall": latest_snapshot.overall_risk if latest_snapshot else 0.0,
+            "dominant": "LOW_RISK"
         },
         "remaining_useful_life": {
-            "hours": 72.0,
-            "lower": 61.2,
-            "upper": 72.0
+            "hours": latest_snapshot.rul_hours if latest_snapshot else 72.0,
+            "lower": max(0.0, (latest_snapshot.rul_hours * 0.85)) if latest_snapshot else 61.2,
+            "upper": min(72.0, (latest_snapshot.rul_hours * 1.15)) if latest_snapshot else 72.0
         },
-        "degradation_velocity": 0.0,
-        "risk": {
-            "thermal": 0.0,
-            "biochemical": 0.230,
-            "dominant": "biochemical"
-        }
+        "sensor": {
+            "temperature_c": latest_telemetry.temperature_c if latest_telemetry else 0.0,
+            "humidity_pct": latest_telemetry.humidity_pct if latest_telemetry else 0.0,
+            "voc_raw": latest_telemetry.voc_raw if latest_telemetry else 0,
+            "nox_raw": latest_telemetry.nox_raw if latest_telemetry else 0
+        },
+        "last_updated": latest_snapshot.timestamp if latest_snapshot else datetime.utcnow().isoformat() + "Z"
     }
 
 @app.get("/devices/{device_id}/events")
-def get_device_events(device_id: str):
+def get_device_events(device_id: str, db: Session = Depends(get_db)):
+    """Returns the immutable evidence ledger of baseline & state transitions."""
+    session_record = db.query(SessionModel).filter_by(device_id=device_id).order_by(SessionModel.started_at.desc()).first()
+    if not session_record:
+        return []
+
+    events = db.query(EventModel).filter_by(session_id=session_record.session_id).order_by(EventModel.id.asc()).all()
     return [
         {
-            "event": "BASELINE_ESTABLISHED",
-            "timestamp": "2026-09-19T15:48:04Z",
-            "severity": 0.0,
-            "evidence": {}
-        },
-        {
-            "event": "STATE_TRANSITION_WATCH",
-            "timestamp": "2026-09-19T15:48:04Z",
-            "severity": 0.2299,
-            "evidence": {"voc_signal": 0.23, "degradation_velocity": 0.0}
+            "id": e.id,
+            "event": e.event,
+            "timestamp": e.timestamp,
+            "severity": e.severity,
+            "evidence": e.evidence
         }
+        for e in events
     ]
 
-# Start the server (run this file directly or use uvicorn)
+@app.get("/devices/{device_id}/telemetry/history")
+def get_device_telemetry_history(device_id: str, limit: int = 60, db: Session = Depends(get_db)):
+    """Returns the recent sensor curves for time-series charts."""
+    session_record = db.query(SessionModel).filter_by(device_id=device_id).order_by(SessionModel.started_at.desc()).first()
+    if not session_record:
+        return []
+
+    readings = db.query(RawTelemetryModel).filter_by(session_id=session_record.session_id).order_by(RawTelemetryModel.id.desc()).limit(limit).all()
+    readings.reverse()
+
+    return [
+        {
+            "received_at": r.received_at,
+            "temperature_c": r.temperature_c,
+            "humidity_pct": r.humidity_pct,
+            "voc_raw": r.voc_raw,
+            "nox_raw": r.nox_raw
+        }
+        for r in readings
+    ]
+
+class IngestPayload(BaseModel):
+    device_id: str
+    food_type: str = "paneer"
+    temperature_c: float
+    humidity_pct: float
+    voc_raw: int
+    nox_raw: int = 0
+    voc_index: Optional[int] = 0
+    nox_index: Optional[int] = 0
+    pressure_hpa: Optional[float] = 1013.25
+    wifi_rssi: Optional[int] = -40
+    sequence_number: Optional[int] = None
+
+@app.post("/telemetry")
+async def ingest_telemetry(payload: IngestPayload):
+    """Direct ingestion endpoint to run inference and broadcast to live subscribers."""
+    result = inference_engine.process_telemetry_payload(payload.model_dump())
+    if not result:
+        raise HTTPException(status_code=400, detail="Payload validation failed")
+
+    # Broadcast to all live SSE subscribers
+    dead_subscribers = []
+    for queue in subscribers:
+        try:
+            await queue.put(result)
+        except Exception:
+            dead_subscribers.append(queue)
+    for q in dead_subscribers:
+        subscribers.remove(q)
+
+    return {"status": "processed", "result": result}
+
+@app.get("/stream/devices/{device_id}")
+async def stream_device_updates(device_id: str):
+    """Server-Sent Events (SSE) stream for instant sub-second frontend updates."""
+    queue = asyncio.Queue()
+    subscribers.append(queue)
+
+    async def event_generator():
+        try:
+            while True:
+                data = await queue.get()
+                if data.get("device_id") == device_id:
+                    yield f"data: {json.dumps(data)}\n\n"
+        except asyncio.CancelledError:
+            subscribers.remove(queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

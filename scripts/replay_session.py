@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 from axios.ingestion.processor import IngestionProcessor
 from axios.processing.signal_processor import SignalProcessor
 from axios.biochemical.engine import BiochemicalEngine

@@ -1,0 +1,5 @@
+{
+    "activation_energy_j_mol": 85000,
+    "reference_temperature_c": 4.0,
+    "max_thermal_exposure_hours": 12.0
+}

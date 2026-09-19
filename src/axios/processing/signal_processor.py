@@ -11,9 +11,9 @@ class SessionState:
         self.baseline_window = baseline_window
         self.raw_history = []
         
-        # Baselines
-        self.baseline_voc: Optional[float] = 31400.0
-        self.baseline_nox: Optional[float] = 20300.0
+        # Baselines (dynamically computed from initial sensor stabilization)
+        self.baseline_voc: Optional[float] = None
+        self.baseline_nox: Optional[float] = None
         
         # Filtering state
         self.voc_median_window = deque(maxlen=3)
@@ -27,13 +27,14 @@ class SessionState:
         self.last_nox_vel: float = 0.0
 
 class SignalProcessor:
-    def __init__(self):
+    def __init__(self, baseline_window: int = 5):
         self.sessions: Dict[str, SessionState] = {}
         self.ema_alpha = 0.3
+        self.baseline_window = baseline_window
 
     def process(self, raw: RawTelemetry) -> ProcessedReading:
         if raw.session_id not in self.sessions:
-            self.sessions[raw.session_id] = SessionState()
+            self.sessions[raw.session_id] = SessionState(baseline_window=self.baseline_window)
         
         state = self.sessions[raw.session_id]
         
@@ -55,14 +56,20 @@ class SignalProcessor:
         if state.last_voc_ema is None:
             state.last_voc_ema, state.last_nox_ema = voc_med, nox_med
         
-        voc_filtered = (self.ema_alpha * voc_med) + ((1 - self.ema_alpha) * state.last_voc_ema)
-        nox_filtered = (self.ema_alpha * nox_med) + ((1 - self.ema_alpha) * state.last_nox_ema)
+        prev_voc_ema = state.last_voc_ema
+        prev_nox_ema = state.last_nox_ema
+
+        voc_filtered = (self.ema_alpha * voc_med) + ((1 - self.ema_alpha) * prev_voc_ema)
+        nox_filtered = (self.ema_alpha * nox_med) + ((1 - self.ema_alpha) * prev_nox_ema)
         
         state.last_voc_ema = voc_filtered
         state.last_nox_ema = nox_filtered
 
         # --- 3. Derivatives (Velocity & Acceleration)[cite: 1] ---
-        current_time = datetime.fromisoformat(raw.received_at.replace("Z", "+00:00"))
+        if raw.received_at:
+            current_time = datetime.fromisoformat(raw.received_at.replace("Z", "+00:00"))
+        else:
+            current_time = datetime.now()
         
         voc_vel, nox_vel = 0.0, 0.0
         voc_acc, nox_acc = 0.0, 0.0
@@ -72,8 +79,8 @@ class SignalProcessor:
             if dt_seconds <= 0: 
                 dt_seconds = 1.0 # Fallback for rapid script replay loops
                 
-            voc_vel = (voc_filtered - state.last_voc_ema) / dt_seconds
-            nox_vel = (nox_filtered - state.last_nox_ema) / dt_seconds
+            voc_vel = (voc_filtered - prev_voc_ema) / dt_seconds
+            nox_vel = (nox_filtered - prev_nox_ema) / dt_seconds
             
             voc_acc = (voc_vel - state.last_voc_vel) / dt_seconds
             nox_acc = (nox_vel - state.last_nox_vel) / dt_seconds
