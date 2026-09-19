@@ -159,8 +159,8 @@ export default function App() {
     }
   };
 
-  // Mathematically Scaled SVG Sparkline
-  const renderSVGChart = (data, strokeColor, minBound, maxBound) => {
+  // Mathematically Scaled SVG Sparkline (Monochrome Black & White)
+  const renderSVGChart = (data, minBound, maxBound) => {
     if (!data || data.length < 2) return null;
     const min = minBound ?? (Math.min(...data) * 0.995);
     const max = maxBound ?? (Math.max(...data) * 1.005);
@@ -176,22 +176,24 @@ export default function App() {
       return `${x},${y}`;
     }).join(' ');
 
+    const gradId = `blackGrad-${data.length}-${Math.round(min)}`;
+
     return (
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
         <defs>
-          <linearGradient id={`grad-${strokeColor}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#000000" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.0" />
           </linearGradient>
         </defs>
         <polygon 
-          fill={`url(#grad-${strokeColor})`} 
+          fill={`url(#${gradId})`} 
           points={`${pad},${height - pad} ${points} ${width - pad},${height - pad}`} 
         />
         <polyline
           fill="none"
-          stroke={strokeColor}
-          strokeWidth="2.8"
+          stroke="#000000"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           points={points}
@@ -201,7 +203,7 @@ export default function App() {
             cx={width - pad}
             cy={height - pad - ((data[data.length - 1] - min) / range) * (height - 2 * pad)}
             r="4.5"
-            fill={strokeColor}
+            fill="#000000"
             stroke="#ffffff"
             strokeWidth="2"
           />
@@ -235,9 +237,12 @@ export default function App() {
       {/* ================================================================ */}
       {/* SECTION 1: THE 5 PRIMARY CORE FACTORS (CLEARLY VISIBLE FIRST)    */}
       {/* ================================================================ */}
+      {/* ================================================================ */}
+      {/* SECTION 1: THE 5 PRIMARY CORE FACTORS (CLEARLY VISIBLE FIRST)    */}
+      {/* ================================================================ */}
       <section className="factors-section">
         <div className="section-headline">
-          <Activity size={18} color="#15803d" />
+          <Activity size={18} color="#000000" />
           <span>Core Spoilage Factors</span>
         </div>
 
@@ -275,7 +280,7 @@ export default function App() {
             <div>
               <div className="factor-card-title">
                 <span>2. Remaining Useful Shelf Life</span>
-                <Clock size={18} color="#059669" />
+                <Clock size={18} color="#000000" />
               </div>
 
               {/* Show SPOILED when risk is 80 to 100%, otherwise show remaining hours */}
@@ -292,7 +297,7 @@ export default function App() {
               ) : (
                 <div>
                   <div className="shelf-life-metric">
-                    {rulHours.toFixed(1)} <span>Hours Remaining</span>
+                    {rulHours.toFixed(1)} <span className="shelf-life-unit">Hours Remaining</span>
                   </div>
                   <div className="confidence-chip">
                     <span>95% Confidence Interval:</span>
@@ -316,37 +321,37 @@ export default function App() {
             <div>
               <div className="factor-card-title">
                 <span>3. Degradation Velocity &amp; Possibilities</span>
-                <Activity size={18} color="#b45309" />
+                <Activity size={18} color="#000000" />
               </div>
 
               <div className="velocity-readout-row">
-                <span className="velocity-number" style={{ color: Math.abs(degradationVelocity) > 0.1 ? '#b91c1c' : '#15803d' }}>
+                <span className="velocity-number">
                   {degradationVelocity.toFixed(3)}
                 </span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>ticks/sec</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  ({Math.abs(degradationVelocity) > 0.1 ? 'Fast Rate' : 'Slow Steady Rate'})
+                <span className="velocity-unit">ticks/sec</span>
+                <span className="velocity-status">
+                  {Math.abs(degradationVelocity) > 0.1 ? 'Fast Rate' : 'Slow Steady Rate'}
                 </span>
               </div>
 
               {/* Conditions Possibilities */}
               <div className="scenario-list">
                 <div className="scenario-item">
-                  <Snowflake size={15} color="#2563eb" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <Snowflake size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <strong>Under Cold Storage (4°C):</strong> Spoilage will <strong>slow down by ~78%</strong> (extends shelf life by 4.8x).
                   </div>
                 </div>
 
                 <div className="scenario-item">
-                  <Leaf size={15} color="#15803d" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <Leaf size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <strong>At Current Conditions ({sensor.temperature_c.toFixed(1)}°C):</strong> Spoilage will progress steadily at current rate.
                   </div>
                 </div>
 
                 <div className="scenario-item">
-                  <SunMedium size={15} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <SunMedium size={15} color="#000000" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <strong>If Temperature Rises (&gt;35°C):</strong> Spoilage will <strong>accelerate fast (3.2x)</strong> and spoil in 4 to 6 hours.
                   </div>
@@ -360,7 +365,7 @@ export default function App() {
             <div>
               <div className="factor-card-title">
                 <span>4 &amp; 5. Thermal vs. Biochemical Risk</span>
-                <Layers size={18} color="#15803d" />
+                <Layers size={18} color="#000000" />
               </div>
 
               <div className="vector-split-container">
@@ -368,13 +373,13 @@ export default function App() {
                 <div className="vector-row">
                   <div className="vector-row-header">
                     <span className="vector-name">Biochemical Gas Risk</span>
-                    <span className="vector-percent" style={{ color: '#059669' }}>{Math.round(bioRisk * 100)}%</span>
+                    <span className="vector-percent">{Math.round(bioRisk * 100)}%</span>
                   </div>
                   <div className="vector-sentence">
                     Measures actual rotting gases (VOCs and NOx) released as bacteria decompose the food.
                   </div>
                   <div className="meter-track">
-                    <div className="meter-fill-bio" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
+                    <div className="meter-fill-black" style={{ width: `${Math.min(100, Math.round(bioRisk * 100))}%` }} />
                   </div>
                 </div>
 
@@ -382,13 +387,13 @@ export default function App() {
                 <div className="vector-row">
                   <div className="vector-row-header">
                     <span className="vector-name">Thermal Abuse Risk</span>
-                    <span className="vector-percent" style={{ color: '#dc2626' }}>{Math.round(thermalRisk * 100)}%</span>
+                    <span className="vector-percent">{Math.round(thermalRisk * 100)}%</span>
                   </div>
                   <div className="vector-sentence">
                     Measures accumulated heat damage over time based on how warm the food got and for how long.
                   </div>
                   <div className="meter-track">
-                    <div className="meter-fill-thermal" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
+                    <div className="meter-fill-black" style={{ width: `${Math.min(100, Math.round(thermalRisk * 100))}%` }} />
                   </div>
                 </div>
               </div>
@@ -409,7 +414,7 @@ export default function App() {
       {/* ================================================================ */}
       <section className="sensor-section">
         <div className="section-headline">
-          <Wind size={18} color="#059669" />
+          <Wind size={18} color="#000000" />
           <span>Telemetry Stream</span>
         </div>
 
@@ -418,7 +423,7 @@ export default function App() {
           <div className="sensor-metric-card">
             <div className="sensor-name">
               <span>VOC Raw Sensor</span>
-              <Wind size={16} color="#059669" />
+              <Wind size={16} color="#000000" />
             </div>
             <div className="sensor-numeric-value">{sensor.voc_raw.toLocaleString()}</div>
             <div className="sensor-sub-caption">SGP41 MOX Resistance</div>
@@ -428,7 +433,7 @@ export default function App() {
           <div className="sensor-metric-card">
             <div className="sensor-name">
               <span>NOx Raw Ticks</span>
-              <Radio size={16} color="#d97706" />
+              <Radio size={16} color="#000000" />
             </div>
             <div className="sensor-numeric-value">{sensor.nox_raw.toLocaleString()}</div>
             <div className="sensor-sub-caption">Nitrogen Oxide Mix</div>
@@ -438,7 +443,7 @@ export default function App() {
           <div className="sensor-metric-card">
             <div className="sensor-name">
               <span>Temperature</span>
-              <Thermometer size={16} color="#dc2626" />
+              <Thermometer size={16} color="#000000" />
             </div>
             <div className="sensor-numeric-value">{sensor.temperature_c.toFixed(1)}°C</div>
             <div className="sensor-sub-caption">SHT40 Cold-Chain Probe</div>
@@ -448,7 +453,7 @@ export default function App() {
           <div className="sensor-metric-card">
             <div className="sensor-name">
               <span>Humidity</span>
-              <Droplets size={16} color="#2563eb" />
+              <Droplets size={16} color="#000000" />
             </div>
             <div className="sensor-numeric-value">{sensor.humidity_pct.toFixed(1)}%</div>
             <div className="sensor-sub-caption">Relative Humidity (RH)</div>
@@ -468,12 +473,12 @@ export default function App() {
                 <div className="curve-main-title">VOC Gas Degradation Curve</div>
                 <div className="curve-subtitle-desc">Sensirion SGP41 Raw Ticks vs. Time</div>
               </div>
-              <div className="curve-badge" style={{ color: '#059669' }}>
-                {sensor.voc_raw} ticks
+              <div className="curve-badge">
+                {sensor.voc_raw.toLocaleString()} ticks
               </div>
             </div>
             <div className="chart-svg-box">
-              {renderSVGChart(vocHistory, '#059669')}
+              {renderSVGChart(vocHistory)}
             </div>
           </div>
 
@@ -484,12 +489,12 @@ export default function App() {
                 <div className="curve-main-title">Thermal Abuse Timeline</div>
                 <div className="curve-subtitle-desc">Temperature (°C) with Arrhenius integration</div>
               </div>
-              <div className="curve-badge" style={{ color: '#dc2626' }}>
+              <div className="curve-badge">
                 {sensor.temperature_c.toFixed(1)}°C
               </div>
             </div>
             <div className="chart-svg-box">
-              {renderSVGChart(tempHistory, '#dc2626', 15, 45)}
+              {renderSVGChart(tempHistory, 15, 45)}
             </div>
           </div>
         </div>
@@ -501,19 +506,19 @@ export default function App() {
       <section className="interactive-toolbar">
         <div className="toolbar-header-flex">
           <div className="toolbar-title">
-            <Sliders size={18} color="#15803d" />
-            <span>Interactive Scenarios &amp; Live Testing:</span>
+            <Sliders size={18} color="#000000" />
+            <span>Interactive Scenarios &amp; Live Simulation</span>
           </div>
 
           <div className="preset-button-row">
-            <button className="action-btn btn-fresh-tone" onClick={() => applyPreset('fresh')}>
-              🌿 Normal Baseline (Risk 12% &rarr; Green Card)
+            <button className="action-btn" onClick={() => applyPreset('fresh')}>
+              <span>Normal Baseline (12% · Safe)</span>
             </button>
-            <button className="action-btn btn-watch-tone" onClick={() => applyPreset('watch')}>
-              ⚠️ Thermal Stress (Risk 48% &rarr; Amber Card)
+            <button className="action-btn" onClick={() => applyPreset('watch')}>
+              <span>Thermal Stress (48% · Watch)</span>
             </button>
-            <button className="action-btn btn-spoil-tone" onClick={() => applyPreset('spoiled')}>
-              🚨 High Gas Surge (Risk 89% &rarr; Red Card + SPOILED)
+            <button className="action-btn" onClick={() => applyPreset('spoiled')}>
+              <span>Gas Surge (89% · Spoiled)</span>
             </button>
             <button className="action-btn" onClick={fetchLiveStatus} title="Sync with live stream">
               <RefreshCw size={13} />
@@ -525,7 +530,7 @@ export default function App() {
         {/* Live Interactive Temperature Slider */}
         <div className="interactive-slider-row">
           <span className="slider-label">
-            🌡️ Test Ambient Temperature:
+            Test Ambient Temperature:
           </span>
           <input 
             type="range" 
