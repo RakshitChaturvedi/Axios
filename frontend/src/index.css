@@ -70,24 +70,20 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f6f8f6;
+  background-color: #ffffff;
   overflow-x: hidden;
 }
 
-/* Soft Blurred Fresh Produce Background with Edge-Revealing Radial Vignette */
+/* Crisp, High-Definition Vegetable Background (Max Visibility, Zero Blur) */
 body::before {
   content: '';
   position: fixed;
-  top: -14px;
-  left: -14px;
-  right: -14px;
-  bottom: -14px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: -1;
-  background: 
-    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.20) 60%, rgba(255, 255, 255, 0.0) 100%),
-    url('./assets/fresh_vegetables_bg.jpg') no-repeat top center / cover;
-  filter: blur(4px);
-  transform: scale(1.03);
+  background: url('./assets/fresh_vegetables_bg.png') no-repeat bottom center / cover;
   pointer-events: none;
 }
 
