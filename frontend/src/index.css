@@ -74,7 +74,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Lush Fresh Raspberry Background with Minute Blur for Depth */
+/* Vibrant Fresh Fruits Assortment Background with Minute Blur for Depth */
 body::before {
   content: '';
   position: fixed;
@@ -85,7 +85,7 @@ body::before {
   z-index: -1;
   background: 
     radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.10) 65%, rgba(0, 0, 0, 0.08) 100%),
-    url('./assets/fresh_raspberries_bg.jpg') no-repeat center center / cover;
+    url('./assets/fresh_fruits_bg.jpg') no-repeat center center / cover;
   filter: blur(1.5px);
   transform: scale(1.01);
   pointer-events: none;
