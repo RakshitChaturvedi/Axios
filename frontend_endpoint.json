@@ -1,0 +1,6 @@
+{
+  "s3_website_url": "http://freshtrace-dashboard-246568717405.s3-website.ap-south-1.amazonaws.com",
+  "cloudfront_url": null,
+  "bucket_name": "freshtrace-dashboard-246568717405",
+  "backend_api_url": "http://13.233.158.144:8080"
+}

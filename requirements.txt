@@ -1,24 +1,9 @@
-annotated-doc==0.0.5
-annotated-types==0.8.0
-anyio==4.15.1
-# Editable Git install with no remote (axios==0.1.0)
--e /home/rakshitchaturvedi/Desktop/Projects/Axios
-coverage==7.16.1
-fastapi==0.141.1
-greenlet==3.5.6
-idna==3.20
-iniconfig==2.3.0
-packaging==26.3
-pluggy==1.6.0
-pydantic==2.13.5
-pydantic-settings==2.15.0
-pydantic_core==2.46.5
-Pygments==2.21.0
-pytest==8.4.2
-pytest-cov==6.3.0
-python-dotenv==1.2.3
-ruff==0.16.8
-SQLAlchemy==2.0.54
-starlette==1.6.0
-typing-inspection==0.4.4
-typing_extensions==4.16.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.9
+boto3>=1.34.0
+python-dotenv>=1.0.0
+pytest>=8.0.0
