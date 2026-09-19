@@ -1,8 +1,3 @@
-/* ==========================================================================
-   FreshTrace Dashboard Stylesheet
-   Executive Food Spoilage & Biochemical Telemetry Intelligence Interface
-   ========================================================================== */
-
 /* Layout Container: Mathematically proportioned 1140px centered grid */
 .app-viewport {
   max-width: 1140px;
@@ -10,417 +5,131 @@
   padding: var(--space-6) var(--space-5) var(--space-12) var(--space-5);
 }
 
-/* ==========================================================================
-   1. TOP MONITORING HEADER (EXECUTIVE 2-SECOND STATE UNDERSTANDING)
-   ========================================================================== */
-.monitoring-header-card {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-subtle);
-  margin-bottom: var(--space-4);
-}
-
-.monitoring-meta-row {
+/* Minimalist Clean Header with Black Elements */
+.brand-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-8);
+  border-bottom: 1.5px solid var(--border-light);
 }
 
-.meta-left {
+.brand-left {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
 }
 
-.monitoring-title {
-  font-size: 1.35rem;
+.brand-title {
+  font-size: var(--font-2xl);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   color: #000000;
-  line-height: 1.1;
-  text-transform: uppercase;
+  line-height: 1;
 }
 
-.device-status-sub {
-  display: flex;
+/* Page Switcher Segmented Tabs */
+.nav-tab-container {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-tab-btn {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.825rem;
-  font-weight: 600;
-  color: var(--text-tertiary);
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
-  animation: pulseGlow 2s infinite ease-in-out;
-}
-
-@keyframes pulseGlow {
-  0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-}
-
-.meta-right {
-  display: flex;
-  align-items: center;
-}
-
-.preset-toggle-group {
-  display: inline-flex;
-  align-items: center;
-  background: #f1f3f5;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 3px;
-  border-radius: 9999px;
-  gap: 3px;
-}
-
-.preset-btn {
-  padding: 6px 14px;
+  padding: 8px 18px;
   border-radius: 9999px;
   font-size: var(--font-xs);
   font-weight: 700;
-  color: #4b5563;
-  transition: all 0.15s ease;
-}
-
-.preset-btn:hover {
-  color: #000000;
-}
-
-.preset-btn.active {
-  background: #000000;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.sync-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #1f2937;
-  transition: all 0.15s ease;
-  margin-left: 2px;
-}
-
-.sync-btn:hover {
-  background: #000000;
-  color: #ffffff;
-}
-
-/* Three Major Executive Numbers */
-.major-numbers-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-  margin-top: var(--space-5);
-}
-
-.major-stat-box {
-  background: #ffffff;
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: all 0.2s ease;
-}
-
-.major-stat-box:hover {
-  border-color: rgba(0, 0, 0, 0.18);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
-}
-
-.major-stat-box.box-fresh {
-  background: linear-gradient(145deg, #ffffff 0%, rgba(240, 253, 244, 0.6) 100%);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.major-stat-box.box-watch {
-  background: linear-gradient(145deg, #ffffff 0%, rgba(254, 243, 199, 0.6) 100%);
-  border-color: rgba(245, 158, 11, 0.4);
-}
-
-.major-stat-box.box-spoiled {
-  background: linear-gradient(145deg, #ffffff 0%, rgba(254, 226, 226, 0.6) 100%);
-  border-color: rgba(239, 68, 68, 0.45);
-}
-
-.stat-label-flex {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-xs);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-}
-
-.stat-val-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  margin: var(--space-3) 0 var(--space-2);
-}
-
-.stat-big-number {
-  font-size: 2.75rem;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: #000000;
-}
-
-.stat-big-number.spoiled-red {
-  color: #dc2626;
-}
-
-.stat-category-pill {
-  font-size: var(--font-xs);
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  background: #000000;
-  color: #ffffff;
-}
-
-.stat-ci-pill,
-.stat-unit-pill {
-  font-size: var(--font-xs);
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: #f3f4f6;
-  color: #374151;
-  font-family: var(--font-mono);
-}
-
-.stat-subtext {
-  font-size: var(--font-xs);
   color: var(--text-secondary);
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-/* ==========================================================================
-   2. LIVE SENSOR STRIP (CONNECTS PHYSICAL HARDWARE TO MODEL)
-   ========================================================================== */
-.sensor-telemetry-strip {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-md);
-  padding: var(--space-4) var(--space-5);
-  margin-bottom: var(--space-4);
-  box-shadow: var(--shadow-subtle);
-}
-
-.strip-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.strip-title-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.strip-title {
-  font-size: var(--font-xs);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #000000;
-}
-
-.strip-info-right {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-
-.telemetry-items-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-}
-
-.telemetry-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: #f9fafb;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-}
-
-.item-icon {
-  color: #111827;
-  flex-shrink: 0;
-}
-
-.item-k {
-  font-size: 0.8rem;
-  color: var(--text-tertiary);
-  font-weight: 600;
-}
-
-.item-v {
-  font-size: 0.95rem;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: #000000;
-  margin-left: auto;
-}
-
-/* Standard Badges: MEASURED vs MODEL OUTPUT */
-.badge-measured-tag {
-  background: #000000;
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.badge-model-tag {
-  background: #0f172a;
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-/* ==========================================================================
-   CARDS GENERAL ARCHITECTURE & TOOLTIPS
-   ========================================================================== */
-.content-card {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  margin-bottom: var(--space-4);
-  box-shadow: var(--shadow-subtle);
-}
-
-.card-header-flex {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-}
-
-.header-left-flex {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.section-title {
-  font-size: var(--font-sm);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: #000000;
-}
-
-/* Hover Tooltip (ⓘ) */
-.tooltip-container {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tooltip-trigger {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  font-size: 11px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.tooltip-trigger:hover {
+.nav-tab-btn:hover {
+  color: #000000;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-tab-btn.active {
   background: #000000;
   color: #ffffff;
-  border-color: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.tooltip-box {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 26px;
-  width: 280px;
-  background: #111827;
-  color: #f9fafb;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.775rem;
-  line-height: 1.45;
-  font-weight: 500;
-  z-index: 100;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.tooltip-container:hover .tooltip-box {
-  display: block;
-  animation: tooltipFade 0.18s ease-out;
+/* Solid Black Live Pill */
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: #000000;
+  border: 1px solid #000000;
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes tooltipFade {
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35);
+}
+
+/* SECTION 1: THE 5 PRIMARY CORE FACTORS */
+.factors-section {
+  margin-bottom: var(--space-8);
+}
+
+.section-headline {
+  font-size: var(--font-lg);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-black);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.factors-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+}
+
+/* Page View Switch Animation */
+.page-view {
+  animation: pageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -428,337 +137,620 @@
   }
 }
 
-/* ==========================================================================
-   3. SPOILAGE PROGRESSION TIMELINE
-   ========================================================================== */
-.progression-card {
-  padding: var(--space-5) var(--space-6);
-}
-
-.timeline-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: var(--space-6) var(--space-2) var(--space-4);
-  position: relative;
-}
-
-.step-node {
+/* Base Factor Card with Translucent Frosted Glass */
+.factor-card {
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  position: relative;
-  z-index: 2;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 240px;
 }
 
-.node-marker {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2.5px solid #d1d5db;
+.factor-card:hover {
+  box-shadow: var(--shadow-elevation);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.factor-card-title {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+/* FACTOR 1: Spoilage Risk Score (Bright & Translucent Color Grading Glassmorphism) */
+.card-green-fresh {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.78) 0%, rgba(16, 185, 129, 0.68) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 32px rgba(34, 197, 94, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-green-fresh .factor-card-title,
+.card-green-fresh .card-meta-text {
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.card-green-fresh .risk-metric-big {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.card-amber-watch {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.80) 0%, rgba(217, 119, 6, 0.70) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-amber-watch .factor-card-title,
+.card-amber-watch .card-meta-text {
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.card-amber-watch .risk-metric-big {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.card-red-spoiled {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82) 0%, rgba(220, 38, 38, 0.72) 100%) !important;
+  backdrop-filter: blur(14px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 12px 36px rgba(239, 68, 68, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-red-spoiled .factor-card-title,
+.card-red-spoiled .card-meta-text {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.card-red-spoiled .risk-metric-big {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.risk-metric-big {
+  font-size: var(--font-4xl);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--text-black);
+  margin: var(--space-2) 0;
+  font-family: var(--font-mono);
+}
+
+.card-meta-text {
+  font-size: var(--font-sm);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* FACTOR 2: Remaining Useful Shelf Life */
+.shelf-life-metric {
+  font-size: var(--font-4xl);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #000000;
+  margin: var(--space-2) 0;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.shelf-life-unit {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+}
+
+.confidence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: #000000;
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  margin-top: var(--space-2);
+}
+
+.confidence-chip span {
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.spoiled-state-banner {
+  background: #000000;
+  border: 2px solid #dc2626;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+  color: #ffffff;
+  margin: var(--space-2) 0;
+}
+
+.spoiled-state-title {
+  font-size: var(--font-2xl);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #ef4444;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: all 0.2s ease;
+  gap: var(--space-2);
 }
 
-.step-node.active .node-marker {
-  border-color: #000000;
-  background: #000000;
+.spoiled-state-desc {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  margin-top: var(--space-1);
+  line-height: 1.4;
+  color: #e5e5e5;
 }
 
-.step-node .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: transparent;
+/* FACTOR 3: Degradation Velocity & Scenarios */
+.velocity-readout-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-3) 0;
 }
 
-.step-node.active .dot {
+.velocity-number {
+  font-size: var(--font-2xl);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #000000;
+  letter-spacing: -0.03em;
+}
+
+.velocity-unit {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.velocity-status {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: #000000;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+
+.scenario-list {
   background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
-.now-flag {
-  position: absolute;
-  top: -24px;
+.scenario-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.scenario-item strong {
+  color: #000000;
+}
+
+/* FACTOR 4 & 5: Thermal vs Biochemical Risk */
+.vector-split-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.vector-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.vector-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.vector-name {
+  font-size: var(--font-sm);
+  font-weight: 800;
+  color: #000000;
+}
+
+.vector-percent {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #000000;
+}
+
+.vector-sentence {
+  font-size: var(--font-xs);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* High-Contrast Black Progress Track */
+.meter-track {
+  height: 8px;
+  background: #eeeeee;
+  border: 1px solid #dddddd;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+
+.meter-fill-black {
+  height: 100%;
+  background: #000000;
+  border-radius: 9999px;
+  transition: width 0.35s ease;
+}
+
+/* SECTION 2: SENSOR METRICS (EXACTLY AS SPECIFIED) */
+.sensor-section {
+  margin-bottom: var(--space-8);
+}
+
+.sensor-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.sensor-metric-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.sensor-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: #000000;
+}
+
+.sensor-name {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Pure Black Data Values */
+.sensor-numeric-value {
+  font-size: var(--font-3xl);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #000000;
+  margin: var(--space-3) 0 var(--space-1) 0;
+  letter-spacing: -0.04em;
+}
+
+.sensor-sub-caption {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* SECTION 3: SENSOR CURVES */
+.curves-section {
+  margin-bottom: var(--space-6);
+}
+
+.curves-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+}
+
+.curve-chart-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.curve-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.curve-main-title {
+  font-size: var(--font-sm);
+  font-weight: 800;
+  color: #000000;
+}
+
+.curve-subtitle-desc {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Curve Badge with Color Accent and Pulse */
+.curve-badge {
+  font-size: var(--font-xs);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: #000000;
   color: #ffffff;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  animation: bounceMini 1.6s infinite ease-in-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes bounceMini {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
+.curve-badge-green {
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-.node-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-tertiary);
-  margin-top: 8px;
-  letter-spacing: 0.04em;
-  text-align: center;
+.badge-pulse-green {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
 }
 
-.step-node.active .node-label {
-  color: #000000;
-  font-weight: 800;
+.curve-badge-red {
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
-.step-line {
-  flex: 1;
-  height: 2.5px;
-  background: #e5e7eb;
-  margin: 0 10px;
-  transform: translateY(-13px);
+.badge-pulse-red {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
 }
 
-.step-line.filled {
-  background: #000000;
+.chart-svg-box {
+  width: 100%;
+  height: 150px;
 }
 
-.timeline-meta-footer {
+/* Telemetry Dedicated Footer Bar */
+.telemetry-footer-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: 0.85rem;
-}
-
-.meta-label {
-  color: var(--text-tertiary);
-  font-weight: 600;
-}
-
-.meta-value {
-  color: #000000;
-  font-weight: 800;
-}
-
-/* ==========================================================================
-   4. DUAL ANALYTICS (DEGRADATION VELOCITY & RISK ATTRIBUTION)
-   ========================================================================== */
-.analytics-grid-2col {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-4);
-  margin-bottom: var(--space-4);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
-.graph-container {
-  width: 100%;
-  height: 155px;
-  margin-bottom: var(--space-3);
+.telemetry-footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
-.svg-canvas {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+.footer-tag {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  color: #000000;
+  font-family: var(--font-mono);
 }
 
-.velocity-context-row {
+.footer-sub {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* SECTION 4: INTERACTIVE CONTROLS */
+.interactive-toolbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.toolbar-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding-top: var(--space-3);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: 0.775rem;
-  color: var(--text-secondary);
 }
 
-.context-item strong {
-  color: #000000;
-}
-
-/* Visual Risk Attribution Panel */
-.attribution-comparison-box {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin: var(--space-2) 0 var(--space-4);
-}
-
-.attrib-bar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.attrib-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.825rem;
-}
-
-.attrib-name {
-  font-weight: 700;
-  color: #000000;
-}
-
-.attrib-val {
-  font-family: var(--font-mono);
+.toolbar-title {
+  font-size: var(--font-sm);
   font-weight: 800;
   color: #000000;
-}
-
-.attrib-track {
-  width: 100%;
-  height: 12px;
-  background: #f1f3f5;
-  border-radius: 9999px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.attrib-fill-black {
-  height: 100%;
-  background: #000000;
-  border-radius: 9999px;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.attribution-dominant-callout {
-  background: #f9fafb;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.8rem;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.callout-label {
-  color: var(--text-tertiary);
-  font-weight: 600;
+.preset-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.callout-sub {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-  line-height: 1.35;
+/* Crisp Black & White Action Buttons */
+.action-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  border: 1.5px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
 }
 
-/* ==========================================================================
-   5. DEGRADATION TRAJECTORY (0h – 72h SIGNATURE KINETIC MODEL)
-   ========================================================================== */
-.trajectory-card {
-  padding: var(--space-5) var(--space-6);
+.action-btn:hover {
+  background: #000000;
+  color: #ffffff;
 }
 
-.trajectory-graph-box {
-  width: 100%;
-  height: 175px;
-  margin-top: var(--space-2);
+.action-btn:active {
+  transform: scale(0.98);
 }
 
-/* ==========================================================================
-   6. INTERACTIVE AMBIENT STRESS SIMULATION TOOLBAR
-   ========================================================================== */
-.simulation-card {
-  padding: var(--space-4) var(--space-5);
-}
-
-.slider-control-row {
+/* Slider Bar with Black Accent */
+.interactive-slider-row {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.9);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
 }
 
 .slider-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   font-size: var(--font-xs);
-  font-weight: 800;
+  font-weight: 700;
   color: #000000;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  min-width: 210px;
+  min-width: 180px;
 }
 
 .slider-input {
   flex: 1;
   accent-color: #000000;
   cursor: pointer;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 9999px;
 }
 
-.slider-value-box {
+.slider-value-display {
+  font-size: var(--font-base);
   font-family: var(--font-mono);
-  font-size: 1rem;
   font-weight: 800;
+  min-width: 65px;
+  text-align: right;
   color: #000000;
-  background: #f3f4f6;
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  min-width: 75px;
-  text-align: center;
 }
 
-/* ==========================================================================
-   RESPONSIVE DESIGN (BREAKPOINTS)
-   ========================================================================== */
-@media (max-width: 900px) {
-  .major-numbers-strip {
+/* MATHEMATICAL RESPONSIVE SCALING */
+@media (max-width: 1024px) {
+  .factors-grid-2x2 {
     grid-template-columns: 1fr;
   }
-  .telemetry-items-row {
+  .curves-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .sensor-grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
-  .analytics-grid-2col {
-    grid-template-columns: 1fr;
-  }
-  .timeline-stepper {
-    margin: var(--space-5) 0;
-  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .app-viewport {
     padding: var(--space-4) var(--space-3) var(--space-8) var(--space-3);
   }
-  .monitoring-meta-row {
+  .brand-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: var(--space-3);
   }
-  .meta-right {
+  .nav-tab-container {
     width: 100%;
-    justify-content: space-between;
+    justify-content: stretch;
   }
-  .telemetry-items-row {
+  .nav-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+  .header-status-group {
+    justify-content: center;
+  }
+  .sensor-grid-4 {
     grid-template-columns: 1fr;
   }
-  .stat-big-number {
-    font-size: 2.25rem;
+  .risk-metric-big,
+  .shelf-life-metric {
+    font-size: var(--font-3xl);
   }
-  .node-label {
-    font-size: 0.65rem;
+  .interactive-slider-row {
+    flex-direction: column;
+    align-items: stretch;
   }
   .slider-label {
     min-width: unset;
+  }
+  .action-btn {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
   }
 }
