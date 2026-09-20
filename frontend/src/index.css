@@ -70,11 +70,11 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #598fb1;
+  background-color: #f1f3f6;
   overflow-x: hidden;
 }
 
-/* Cold Intelligence Frozen Fruit & Mist Background */
+/* Dimmed Subtle Doodle Fruit Pattern Background */
 body::before {
   content: '';
   position: fixed;
@@ -83,7 +83,8 @@ body::before {
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: #598fb1 url('./assets/cold_intelligence_bg.png') no-repeat center center / cover;
+  background: url('./assets/fruit_pattern_bg.png') repeat center top / 340px auto;
+  opacity: 0.12;
   pointer-events: none;
 }
 
