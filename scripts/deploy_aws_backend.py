@@ -42,7 +42,7 @@ def exclude_filter(tarinfo):
     return tarinfo
 
 with tarfile.open(tar_path, "w:gz") as tar:
-    for item in ["src", "config", "requirements.txt", "pyproject.toml", ".env"]:
+    for item in ["src", "config", "requirements.txt", "pyproject.toml", ".env", "frontend/dist"]:
         if os.path.exists(item):
             print(f"  Adding: {item}")
             tar.add(item, arcname=item, filter=exclude_filter)

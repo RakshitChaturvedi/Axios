@@ -19,7 +19,10 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.__API_BASE__) || 'http://localhost:8080';
+const API_BASE = (typeof window !== 'undefined' && window.__API_BASE__) ||
+  (typeof window !== 'undefined' && window.location.port !== '5180' && window.location.port !== '5173' && window.location.origin.startsWith('http')
+    ? window.location.origin
+    : (import.meta.env.VITE_API_BASE || 'http://localhost:8080'));
 
 export default function App() {
   const [deviceId] = useState('FreshTrace-Node-01');

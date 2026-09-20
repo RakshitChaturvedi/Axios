@@ -211,6 +211,20 @@ async def stream_device_updates(device_id: str):
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+# Mount frontend build if present
+from fastapi.staticfiles import StaticFiles
+import os
+
+candidates = [
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "frontend", "dist"),
+    os.path.join(os.getcwd(), "frontend", "dist"),
+    "/opt/axios/frontend/dist"
+]
+for c in candidates:
+    if os.path.exists(c) and os.path.exists(os.path.join(c, "index.html")):
+        app.mount("/", StaticFiles(directory=c, html=True), name="frontend")
+        break
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
