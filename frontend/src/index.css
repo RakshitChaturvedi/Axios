@@ -70,11 +70,11 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FFD1DC;
+  background-color: #fcfbf9;
   overflow-x: hidden;
 }
 
-/* Baby Pink Aesthetic Background */
+/* Minimalist Doodle Fruit Pattern Background */
 body::before {
   content: '';
   position: fixed;
@@ -83,8 +83,7 @@ body::before {
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: #FFD1DC;
-  background: linear-gradient(135deg, #FFF0F5 0%, #FFD6E0 45%, #FFB6C1 100%);
+  background: #fcfbf9 url('./assets/fruit_pattern_bg.png') repeat center top / 380px auto;
   pointer-events: none;
 }
 

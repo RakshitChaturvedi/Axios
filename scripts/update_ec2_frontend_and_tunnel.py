@@ -39,12 +39,12 @@ print("  -> Uploaded bundle to S3.")
 # Also sync the updated frontend to S3 website bucket 'freshtrace' and 'freshtrace-dashboard-246568717405'
 print("  -> Updating S3 website buckets with new frontend build...")
 dist_dir = os.path.abspath("frontend/dist")
-for b in ["freshtrace", f"freshtrace-dashboard-246568717405"]:
+for b in ["freshtrace"]:
     for root, _, files in os.walk(dist_dir):
         for f in files:
             full_path = os.path.join(root, f)
             rel_path = os.path.relpath(full_path, dist_dir).replace("\\", "/")
-            ct = "application/javascript" if f.endswith(".js") else "text/css" if f.endswith(".css") else "text/html" if f.endswith(".html") else "image/jpeg"
+            ct = "application/javascript" if f.endswith(".js") else "text/css" if f.endswith(".css") else "text/html" if f.endswith(".html") else "image/png" if f.endswith(".png") else "image/jpeg"
             s3.upload_file(full_path, b, rel_path, ExtraArgs={"ContentType": ct})
 
 # 2. SSM to update EC2 and start tunnel
