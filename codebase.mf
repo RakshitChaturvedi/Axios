@@ -1,0 +1,243 @@
+# ==============================================================================
+# CODEBASE MANIFEST: AXIOS / FRESH-TRACE SPOILAGE INTELLIGENCE PLATFORM
+# Version: 1.0.0
+# Date: September 20, 2026
+# Target Event: AWS x Bharat Builds — First Commit Hackathon
+# Primary Region: ap-south-1 (Mumbai, India)
+# AWS Account ID: 246568717405
+# Status: Fully Provisioned, Deployed, and Verified End-to-End
+# ==============================================================================
+
+[PROJECT_IDENTIFICATION]
+Name: FreshTrace (Axios)
+Repository: https://github.com/RakshitChaturvedi/Axios
+Active Branch: develop (feature/aws-deployment-and-ui)
+Description: Real-time biochemical food spoilage intelligence, dynamic shelf-life estimation, and cold-chain audit evidence platform powered by AWS native services.
+
+# ==============================================================================
+# 1. LIVE CLOUD INFRASTRUCTURE & ENDPOINTS (100% AWS NATIVE)
+# ==============================================================================
+
+[AWS_PRODUCTION_ENDPOINTS]
+Official EC2 Domain:       http://ec2-13-233-158-144.ap-south-1.compute.amazonaws.com
+Direct EC2 Web IP (Port 80): http://13.233.158.144
+S3 Static Website (Short): http://freshtrace.s3-website.ap-south-1.amazonaws.com
+S3 Static Website (Full):  http://freshtrace-dashboard-246568717405.s3-website.ap-south-1.amazonaws.com
+Mobile HTTPS Tunnel:       https://computer-astrology-venture-dollars.trycloudflare.com
+FastAPI Health Check:      http://13.233.158.144:8080/health
+Live Device Telemetry API: http://13.233.158.144:8080/devices/FreshTrace-Node-01/status
+RDS PostgreSQL Database:   axios-db.c9i84ys0kgzs.ap-south-1.rds.amazonaws.com:5432
+IoT Core MQTT Endpoint:    ak4ocz5tvo1yp-ats.iot.ap-south-1.amazonaws.com
+IoT Telemetry Topic:       freshtrace/device/FreshTrace-Node-01/telemetry
+SQS Buffer Queue:          https://sqs.ap-south-1.amazonaws.com/246568717405/AxiosTelemetryQueue
+SNS Spoilage Alert Topic:  arn:aws:sns:ap-south-1:246568717405:AxiosSpoilageAlerts
+S3 Cold-Chain Archive:     s3://axios-raw-archive-246568717405/
+
+[SYSTEMD_SERVICES_ON_EC2]
+Instance ID: i-01c71ae75b0f02743 (t3.small, Amazon Linux 2023 x86_64)
+Service 1: axios-api.service        -> FastAPI Uvicorn REST API on 0.0.0.0:8080 + Port 80 iptables NAT redirect
+Service 2: axios-inference.service  -> SQS background consumer running biochemical & Arrhenius thermal inference
+Service 3: axios-tunnel.service     -> Cloudflare HTTPS edge tunnel for verified mobile SSL access
+
+# ==============================================================================
+# 2. CODEBASE DIRECTORY TREE & COMPONENT MAPPING
+# ==============================================================================
+
+Axios/
+├── .env                                # Cloud environment variables & AWS IAM keys (Local only)
+├── .gitignore                          # Git exclusions (env, venv, pycache, db, dist, logs)
+├── codebase.mf                         # This complete architecture & codebase manifest
+├── pyproject.toml                      # Python build configuration and packaging dependencies
+├── requirements.txt                    # Production pip dependency manifest
+├── backend_endpoint.json               # Auto-generated EC2 public endpoint metadata
+├── frontend_endpoint.json              # Auto-generated S3 website endpoint metadata
+│
+├── config/                             # Physics & biochemical profile definitions
+│   └── sensor_config.yaml              # Thresholds, sample rates, baseline calibration windows
+│
+├── documentation/                      # Architectural designs & hackathon specs
+│   ├── aws native arch.pdf             # Original AWS native design document
+│   └── aws_native_arch.txt             # Extracted architectural mapping & justification
+│
+├── src/                                # Core Python backend, ML engine & persistence
+│   └── axios/
+│       ├── __init__.py
+│       ├── inference_service.py        # Real-time SQS worker, threshold alerts, DB persistence
+│       │
+│       ├── api/                        # FastAPI Web API
+│       │   ├── __init__.py
+│       │   └── routes.py               # REST endpoints, SSE stream, StaticFiles frontend mount
+│       │
+│       ├── biochemical/                # Volatile Organic Compounds & NOx models
+│       │   ├── __init__.py
+│       │   ├── calibrator.py           # Baseline drift tracker & baseline compensation
+│       │   └── risk.py                 # Biochemical decomposition risk quantification
+│       │
+│       ├── thermal/                    # Arrhenius kinetic thermal engine
+│       │   ├── __init__.py
+│       │   └── engine.py               # Time-temperature kinetic integration, thermal abuse penalty
+│       │
+│       ├── rul/                        # Remaining Useful Life estimation
+│       │   ├── __init__.py
+│       │   └── estimator.py            # Non-linear shelf-life decay & confidence interval bounds
+│       │
+│       ├── processing/                 # Signal cleaning & statistical smoothing
+│       │   ├── __init__.py
+│       │   └── signal_processor.py     # Exponential Moving Average (EMA) & anomaly filtration
+│       │
+│       ├── ingestion/                  # Edge payload validator & normalization
+│       │   ├── __init__.py
+│       │   └── processor.py            # Sensor reading parsing & timestamp reconciliation
+│       │
+│       ├── persistence/                # SQLAlchemy ORM & PostgreSQL database
+│       │   ├── __init__.py
+│       │   ├── db.py                   # Engine factory with RDS fallback to SQLite
+│       │   └── models.py               # Sessions, Telemetry, Spoilage Events, State Snapshots
+│       │
+│       └── domain/                     # Pure domain contracts & enums
+│           ├── __init__.py
+│           └── models.py               # Pydantic schemas: SensorReading, SpoilageRisk, FoodType
+│
+├── frontend/                           # FreshTrace React 19 + Vite Web Application
+│   ├── index.html                      # HTML5 entry with Outfit typography & meta tags
+│   ├── package.json                    # React 19, Lucide icons, Vite 8 build tools
+│   ├── vite.config.js                  # Production bundler config
+│   │
+│   ├── public/                         # Static image assets
+│   │   ├── favicon.svg                 # Brand SVG icon
+│   │   ├── icons.svg                   # Navigation sprite
+│   │   ├── fresh_fruits_bg.jpg         # 100% native brightness, unblurred produce background
+│   │   ├── fresh_vegetables_bg.jpg     # Alternate framed vegetable background
+│   │   └── fresh_raspberries_bg.jpg    # Alternate raspberry background
+│   │
+│   └── src/                            # Frontend source code
+│       ├── main.jsx                    # React application mount
+│       ├── index.css                   # Global resets, glassmorphic styles, font tokens
+│       ├── App.jsx                     # Dashboard logic, polling, tabs, hero cards, live gauges
+│       └── App.css                     # Responsive styling, pill tabs, black & white velocity card
+│
+└── scripts/                            # Cloud deployment, automation & verification scripts
+    ├── deploy_aws_backend.py           # Auto-bundles backend, provisions EC2, IAM, systemd
+    ├── deploy_aws_frontend.py          # Builds Vite app, provisions S3 static website & policies
+    ├── deploy_aws_infra.py             # Provisions SQS, SNS, S3 raw bucket, IoT Topic Rule, RDS
+    ├── verify_full_cloud_deployment.py # Automated E2E verification across all AWS services
+    ├── update_ec2_frontend_and_tunnel.py # Deploys React bundle & Cloudflare HTTPS tunnel to EC2
+    ├── test_aws_e2e_pipeline.py        # Tests IoT Core MQTT publish -> SQS -> S3 flow
+    ├── test_paneer_flow.py             # Simulates dairy/paneer spoilage telemetry session
+    ├── replay_session.py               # Offline batch telemetry replayer for model benchmarking
+    └── wait_for_rds.py                 # Health-check polling script for RDS availability
+
+# ==============================================================================
+# 3. MATHEMATICAL & INFERENCE MODEL SPECIFICATIONS
+# ==============================================================================
+
+[BIOCHEMICAL_RISK_MODEL]
+Input Parameters: Raw VOC (ticks), Raw NOx (ticks), Food Profile (Tomato, Paneer, Mango)
+Algorithm:
+1. Baseline Tracking: Computes dynamic exponential moving average (EMA) of clean environment:
+   VOC_base = alpha * VOC_raw + (1 - alpha) * VOC_base_prev  (alpha = 0.05)
+2. Gas Ratio Ratio:
+   delta_VOC = max(0, VOC_raw - VOC_base)
+3. Normalized Sigmoidal Risk:
+   Risk_bio = 1.0 / (1.0 + exp(-k * (delta_VOC - threshold_midpoint)))
+Dominant Trigger: Microbial decomposition releasing volatile sulfur and nitrogen compounds.
+
+[THERMAL_ARRHENIUS_MODEL]
+Input Parameters: Temperature T(t) in Celsius, Ambient Target T_opt
+Algorithm:
+1. Kelvin Conversion: T_k = T(t) + 273.15
+2. Kinetic Reaction Acceleration (Arrhenius factor):
+   k(T) = A * exp(-E_a / (R * T_k))
+3. Cumulative Kinetic Exposure:
+   Abuse_thermal = sum( max(0, T(t) - T_opt) * delta_t * k(T) )
+Dominant Trigger: Prolonged breach of cold-chain thresholds (>8°C for dairy, >15°C for produce).
+
+[REMAINING_USEFUL_LIFE_RUL]
+Calculation:
+   RUL(hours) = max(0, Initial_ShelfLife * (1.0 - Spoilage_Risk) / (1.0 + abs(Degradation_Velocity) * 10))
+Confidence Range:
+   RUL_lower = RUL * 0.85
+   RUL_upper = RUL * 1.15
+
+# ==============================================================================
+# 4. FRONTEND UX DESIGN SYSTEM SPECIFICATION
+# ==============================================================================
+
+[LAYOUT_STRUCTURE]
+- Header: Frosted translucent glass (rgba(255, 255, 255, 0.90)), brand title "FreshTrace", navigation pills, AWS IoT status indicator.
+- Hero Card: Centered Spoilage Risk Score prominently displayed in large 5.5rem typography, dynamic color state (Fresh & Safe green, Needs Attention yellow, Spoiled red).
+- Row 2 (Below Hero):
+  * Left: Remaining Useful Shelf Life with hours countdown, confidence interval, and explanatory subtitle.
+  * Right: Degradation Velocity in strictly BLACK & WHITE styling, ticks/second velocity rate, and three temperature breakdown scenarios (Fridge, Room Temp, Warm).
+- Row 3 (Bottom): Thermal vs. Biochemical Risk comparison with vivid progress meters (emerald green for rotting gases, coral red for heat damage).
+- Background: 100% native unblurred, full-brightness high-definition fruit & produce photograph across full viewport.
+- Navigation Modes: Dedicated pill switcher toggling between "Core Spoilage Factors" and "Telemetry Stream".
+
+# ==============================================================================
+# 5. DATABASE SCHEMA (AMAZON RDS POSTGRESQL)
+# ==============================================================================
+
+[TABLE: sessions]
+- session_id     : VARCHAR(64) [PRIMARY KEY]
+- device_id      : VARCHAR(64) [INDEXED]
+- food_type      : VARCHAR(32)
+- start_time     : TIMESTAMP (UTC)
+- end_time       : TIMESTAMP (UTC, NULLABLE)
+- initial_weight : FLOAT
+- is_active      : BOOLEAN
+
+[TABLE: raw_telemetry]
+- id             : BIGSERIAL [PRIMARY KEY]
+- session_id     : VARCHAR(64) [FOREIGN KEY -> sessions.session_id]
+- timestamp      : TIMESTAMP (UTC) [INDEXED]
+- temperature_c  : FLOAT
+- humidity_pct   : FLOAT
+- pressure_hpa   : FLOAT
+- voc_raw        : INTEGER
+- nox_raw        : INTEGER
+- voc_index      : INTEGER
+- nox_index      : INTEGER
+- wifi_rssi      : INTEGER
+
+[TABLE: state_snapshots]
+- id             : BIGSERIAL [PRIMARY KEY]
+- session_id     : VARCHAR(64) [FOREIGN KEY -> sessions.session_id]
+- timestamp      : TIMESTAMP (UTC)
+- spoilage_risk  : FLOAT
+- biochemical_risk: FLOAT
+- thermal_risk   : FLOAT
+- degradation_velocity: FLOAT
+- rul_hours      : FLOAT
+- state          : VARCHAR(32)
+
+[TABLE: events]
+- id             : BIGSERIAL [PRIMARY KEY]
+- session_id     : VARCHAR(64) [FOREIGN KEY -> sessions.session_id]
+- timestamp      : TIMESTAMP (UTC)
+- event_type     : VARCHAR(64) (e.g., THRESHOLD_BREACH, CRITICAL_SPOILAGE, RAPID_DEGRADATION)
+- severity       : VARCHAR(16) (INFO, WARNING, CRITICAL)
+- payload_json   : JSONB
+
+# ==============================================================================
+# 6. HOW TO OPERATE & MAINTAIN
+# ==============================================================================
+
+[LOCAL_DEVELOPMENT]
+1. Start FastAPI REST Backend:
+   python -m uvicorn axios.api.routes:app --app-dir src --host 0.0.0.0 --port 8080
+2. Start SQS Inference Worker:
+   python -m axios.inference_service
+3. Start React Frontend:
+   cd frontend && npm run dev -- --port 5180
+
+[AWS_DEPLOYMENT_COMMANDS]
+1. Update Cloud Backend on EC2:
+   python scripts/deploy_aws_backend.py
+2. Update Cloud Frontend on S3 & EC2:
+   python scripts/deploy_aws_frontend.py
+3. Run Complete End-to-End Cloud Health Verification:
+   python scripts/verify_full_cloud_deployment.py
+
+# ==============================================================================
+# END OF CODEBASE MANIFEST
+# ==============================================================================
