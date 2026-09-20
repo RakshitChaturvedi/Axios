@@ -34,10 +34,26 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const API_BASE = (typeof window !== 'undefined' && window.__API_BASE__) ||
-  (typeof window !== 'undefined' && window.location.port !== '5180' && window.location.port !== '5173' && window.location.origin.startsWith('http')
-    ? window.location.origin
-    : (import.meta.env.VITE_API_BASE || 'http://localhost:8080'));
+const getApiBase = () => {
+  if (typeof window === 'undefined') return 'http://13.233.158.144';
+  if (window.__API_BASE__) return window.__API_BASE__;
+  if (import.meta.env.VITE_API_BASE) return import.meta.env.VITE_API_BASE;
+  
+  // If running on HTTPS tunnel or domain, keep HTTPS origin to avoid mixed-content blocks
+  if (window.location.protocol === 'https:') {
+    return window.location.origin;
+  }
+  
+  // If loaded directly on EC2 instance host
+  if (window.location.hostname === '13.233.158.144' || window.location.hostname.includes('compute.amazonaws.com')) {
+    return window.location.origin;
+  }
+  
+  // For local dev (localhost:5180) and S3 static bucket hosting, route directly to public AWS EC2 API
+  return 'http://13.233.158.144';
+};
+
+const API_BASE = getApiBase();
 
 export default function App() {
   const [deviceId] = useState('FreshTrace-Node-01');
@@ -100,13 +116,15 @@ export default function App() {
           setRulHours(data.remaining_useful_life.hours ?? 24.5);
         }
         if (data.sensor) {
-          const newTemp = data.sensor.temperature_c || 30.2;
-          const newVoc = data.sensor.voc_raw || 31555;
+          const newTemp = data.sensor.temperature_c ?? 30.2;
+          const newVoc = data.sensor.voc_raw ?? 31555;
+          const newNox = data.sensor.nox_raw ?? 19601;
+          const newHum = data.sensor.humidity_pct ?? 67.9;
           setSensor({
             voc_raw: newVoc,
-            nox_raw: data.sensor.nox_raw || 19601,
+            nox_raw: newNox,
             temperature_c: newTemp,
-            humidity_pct: data.sensor.humidity_pct || 67.9
+            humidity_pct: newHum
           });
           setVocHistory(prev => [...prev.slice(-15), newVoc]);
           setTempHistory(prev => [...prev.slice(-15), newTemp]);
