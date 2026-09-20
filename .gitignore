@@ -7,8 +7,10 @@ __pycache__/
 # Virtual environment
 .venv/
 
-# Environment
+# Environment & Secrets
 .env
+secrets.h
+FreshTrace_Sensor/secrets.h
 
 # Data
 *.db

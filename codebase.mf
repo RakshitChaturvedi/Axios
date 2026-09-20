@@ -50,6 +50,12 @@ Axios/
 ├── backend_endpoint.json               # Auto-generated EC2 public endpoint metadata
 ├── frontend_endpoint.json              # Auto-generated S3 website endpoint metadata
 │
+├── FreshTrace_Sensor/                  # ESP32-S3 IoT Node Firmware & AWS MQTT Publisher
+│   ├── FreshTrace_Sensor.ino           # Dual I2C driver (BME280 + SGP41), Gas Algorithm & AWS TLS publisher
+│   ├── secrets.h                       # Device credentials & TLS certs (Gitignored / Local only)
+│   ├── secrets.example.h               # Sanitized credential template for open-source setup
+│   └── README.md                       # Pinout, required Arduino libraries & flashing instructions
+│
 ├── config/                             # Physics & biochemical profile definitions
 │   └── sensor_config.yaml              # Thresholds, sample rates, baseline calibration windows
 │
