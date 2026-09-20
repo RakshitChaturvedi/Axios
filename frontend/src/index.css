@@ -70,11 +70,11 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
+  background-color: #FFD1DC;
   overflow-x: hidden;
 }
 
-/* Full Quality, Bright & Unblurred Fresh Fruits Background */
+/* Baby Pink Aesthetic Background */
 body::before {
   content: '';
   position: fixed;
@@ -83,7 +83,8 @@ body::before {
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: url('./assets/fresh_fruits_bg.jpg') no-repeat center center / cover;
+  background: #FFD1DC;
+  background: linear-gradient(135deg, #FFF0F5 0%, #FFD6E0 45%, #FFB6C1 100%);
   pointer-events: none;
 }
 

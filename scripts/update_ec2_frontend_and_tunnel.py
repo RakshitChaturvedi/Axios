@@ -100,7 +100,7 @@ for attempt in range(20):
         stderr = inv.get("StandardErrorContent", "")
         print("STDOUT:\n", stdout)
         if stderr:
-            print("STDERR:\n", stderr)
+            print("STDERR:\n", stderr.encode("ascii", errors="replace").decode("ascii"))
         lines = [line.strip() for line in stdout.splitlines() if "trycloudflare.com" in line]
         if lines:
             tunnel_url = lines[-1]
