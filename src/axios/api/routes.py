@@ -45,14 +45,40 @@ def get_devices(db: Session = Depends(get_db)):
         devices = ["FreshTrace-Node-01"]
     return {"devices": devices}
 
+def check_device_online(ts_val) -> tuple[bool, float]:
+    """Calculates whether the hardware node is actively streaming or powered off."""
+    if not ts_val:
+        return False, 999999.0
+    try:
+        if isinstance(ts_val, str):
+            clean_ts = ts_val.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_ts)
+        elif isinstance(ts_val, datetime):
+            dt = ts_val
+        else:
+            return False, 999999.0
+
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.utcnow()
+        elapsed = (now - dt).total_seconds()
+        # ESP32 publishes every 1-2 seconds. If no packet in >15s, sensor is considered OFFLINE / DISCONNECTED
+        is_online = elapsed <= 15.0
+        return is_online, max(0.0, elapsed)
+    except Exception:
+        return False, 999999.0
+
 @app.get("/devices/{device_id}/status")
 def get_device_status(device_id: str, db: Session = Depends(get_db)):
-    """Returns the primary real-time state object for the dashboard."""
+    """Returns the primary real-time state object for the dashboard with online/offline detection."""
     # Check in-memory active state first
     if device_id in inference_engine.last_known_state:
         state = inference_engine.last_known_state[device_id]
+        ts = state.get("timestamp")
+        is_online, elapsed = check_device_online(ts)
         return {
             "device_id": device_id,
+            "is_online": is_online,
+            "connection_state": "ONLINE_STREAMING" if is_online else "OFFLINE_STANDBY",
+            "seconds_since_last_packet": round(elapsed, 1),
             "food_type": state["food_type"],
             "state": state["state"],
             "spoilage_risk": state["overall_risk"],
@@ -74,7 +100,7 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
                 "voc_raw": state["voc_raw"],
                 "nox_raw": state["nox_raw"]
             },
-            "last_updated": state["timestamp"]
+            "last_updated": ts
         }
 
     # Otherwise query the latest snapshot from DB
@@ -83,6 +109,9 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
         # Default empty state for known device
         return {
             "device_id": device_id,
+            "is_online": False,
+            "connection_state": "OFFLINE_STANDBY",
+            "seconds_since_last_packet": 999999.0,
             "food_type": "paneer",
             "state": "STABLE",
             "spoilage_risk": 0.0,
@@ -96,8 +125,14 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
     latest_snapshot = db.query(StateSnapshotModel).filter_by(session_id=session_record.session_id).order_by(StateSnapshotModel.id.desc()).first()
     latest_telemetry = db.query(RawTelemetryModel).filter_by(session_id=session_record.session_id).order_by(RawTelemetryModel.id.desc()).first()
 
+    ts = latest_snapshot.timestamp if latest_snapshot else (latest_telemetry.timestamp if latest_telemetry else None)
+    is_online, elapsed = check_device_online(ts)
+
     return {
         "device_id": device_id,
+        "is_online": is_online,
+        "connection_state": "ONLINE_STREAMING" if is_online else "OFFLINE_STANDBY",
+        "seconds_since_last_packet": round(elapsed, 1),
         "food_type": session_record.food_type,
         "state": latest_snapshot.spoilage_state if latest_snapshot else "STABLE",
         "spoilage_risk": latest_snapshot.overall_risk if latest_snapshot else 0.0,
@@ -119,7 +154,7 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
             "voc_raw": latest_telemetry.voc_raw if latest_telemetry else 0,
             "nox_raw": latest_telemetry.nox_raw if latest_telemetry else 0
         },
-        "last_updated": latest_snapshot.timestamp if latest_snapshot else datetime.utcnow().isoformat() + "Z"
+        "last_updated": ts if ts else datetime.utcnow().isoformat() + "Z"
     }
 
 @app.get("/devices/{device_id}/events")

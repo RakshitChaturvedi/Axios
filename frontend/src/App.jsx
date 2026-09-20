@@ -70,9 +70,10 @@ export default function App() {
     -0.012, -0.013, -0.015, -0.014, -0.016, -0.015, -0.015, -0.015
   ]);
 
-  // Live Timestamp Tracking
+  // Live Timestamp & Connection Tracking
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [secondsAgo, setSecondsAgo] = useState(0);
+  const [isOnline, setIsOnline] = useState(true);
 
   // Fetch live state from backend API (connected to AWS IoT Core + RDS)
   const fetchLiveStatus = async () => {
@@ -80,6 +81,15 @@ export default function App() {
       const res = await fetch(`${API_BASE}/devices/${deviceId}/status`);
       if (res.ok) {
         const data = await res.json();
+        
+        // Dynamic Online/Offline Detection
+        if (typeof data.is_online === 'boolean') {
+          setIsOnline(data.is_online);
+        } else if (data.last_updated) {
+          const elapsed = (Date.now() - new Date(data.last_updated).getTime()) / 1000;
+          setIsOnline(elapsed <= 20);
+        }
+
         if (data.risk) {
           const overall = data.risk.overall ?? data.spoilage_risk ?? 0.18;
           setRiskScore(overall);
@@ -101,11 +111,17 @@ export default function App() {
           setVocHistory(prev => [...prev.slice(-15), newVoc]);
           setTempHistory(prev => [...prev.slice(-15), newTemp]);
         }
-        setLastUpdated(new Date());
+        if (data.last_updated) {
+          setLastUpdated(new Date(data.last_updated));
+        } else {
+          setLastUpdated(new Date());
+        }
         setSecondsAgo(0);
+      } else {
+        setIsOnline(false);
       }
     } catch (e) {
-      // Backend polling fallback
+      setIsOnline(false);
     }
   };
 
@@ -114,7 +130,13 @@ export default function App() {
     fetchLiveStatus();
     const pollInterval = setInterval(fetchLiveStatus, 4000);
     const tickInterval = setInterval(() => {
-      setSecondsAgo(prev => prev + 1);
+      setSecondsAgo(prev => {
+        const next = prev + 1;
+        if (next > 20) {
+          setIsOnline(false);
+        }
+        return next;
+      });
     }, 1000);
     return () => {
       clearInterval(pollInterval);
@@ -302,9 +324,9 @@ export default function App() {
           </nav>
 
         <div className="header-status-group">
-          <div className="live-pill">
-            <span className="live-dot" />
-            <span>AWS IoT Core Active · {deviceId}</span>
+          <div className={`live-pill ${isOnline ? 'pill-online' : 'pill-offline'}`}>
+            <span className={`live-dot ${isOnline ? 'dot-online' : 'dot-offline'}`} />
+            <span>{isOnline ? `AWS IoT Core Active · ${deviceId}` : `Sensor Offline · Standby (${deviceId})`}</span>
           </div>
         </div>
       </header>
@@ -538,18 +560,24 @@ export default function App() {
       {activeTab === 'telemetry' && (
         <div className="page-view animate-fade-in">
           {/* SENSOR LIVE UPDATE TIMESTAMP BANNER */}
-          <div className="telemetry-live-banner">
+          <div className={`telemetry-live-banner ${isOnline ? '' : 'telemetry-banner-offline'}`}>
             <div className="telemetry-timestamp-group">
-              <span className="live-ping-dot" />
+              <span className={`live-ping-dot ${isOnline ? 'dot-online' : 'dot-offline'}`} />
               <span className="telemetry-updated-text">
-                Atmospheric stream active: <strong>{secondsAgo === 0 ? 'Just now' : `${secondsAgo}s ago`}</strong> ({lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})
+                {isOnline ? (
+                  <>Atmospheric stream active: <strong>{secondsAgo === 0 ? 'Just now' : `${secondsAgo}s ago`}</strong> ({lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})</>
+                ) : (
+                  <>Sensor disconnected / powered off. Last reading received <strong>{secondsAgo}s ago</strong> ({lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})</>
+                )}
               </span>
             </div>
             <div className="telemetry-actions-group">
-              <span className="telemetry-device-tag">Sensirion SGP41 + SHT40 Hardware Active</span>
+              <span className={`telemetry-device-tag ${isOnline ? '' : 'device-tag-offline'}`}>
+                {isOnline ? 'Sensirion SGP41 + SHT40 Hardware Active' : 'Sensor Hardware Offline · Standby'}
+              </span>
               <button className="action-btn" onClick={fetchLiveStatus} title="Refresh sensor data">
                 <RefreshCw size={12} />
-                <span>Refresh Feed</span>
+                <span>{isOnline ? 'Refresh Feed' : 'Check Sensor Feed'}</span>
               </button>
             </div>
           </div>
