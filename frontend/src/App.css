@@ -1,8 +1,38 @@
-/* Layout Container: Mathematically proportioned 1140px centered grid */
+/* Dynamic App Background Layer */
+.app-background-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* Consistent, subtle Black & White fruit doodle pattern for Dashboard & Atmospheric pages */
+.bg-page-factors,
+.bg-page-telemetry {
+  background: url('./assets/fruit_pattern_bg.png') repeat center top / 340px auto;
+  opacity: 0.16;
+  filter: none;
+}
+
+/* Page 3: About FreshTrace -> Pomegranate at bottom right, 0 BLUR, 100% visible */
+.bg-page-about {
+  background: url('./assets/pomegranate_bg.png') no-repeat right bottom / min(650px, 46vw) auto;
+  opacity: 1;
+  filter: none;
+}
+
+/* Layout Container: Mathematically proportioned 1180px centered grid fitting 100vh desktop */
 .app-viewport {
-  max-width: 1140px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: var(--space-6) var(--space-5) var(--space-12) var(--space-5);
+  padding: 12px 20px 20px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Minimalist Clean Solid Header */
@@ -11,13 +41,13 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-4);
-  padding: 14px var(--space-6);
-  margin-bottom: var(--space-8);
+  gap: 12px;
+  padding: 10px 20px;
+  margin-bottom: 12px;
   background: #ffffff;
   border-radius: var(--radius-lg);
   border: 1.5px solid #cbd5e1;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .brand-left {
@@ -26,7 +56,7 @@
 }
 
 .brand-title {
-  font-size: var(--font-2xl);
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: #000000;
@@ -38,18 +68,18 @@
   display: inline-flex;
   align-items: center;
   background: #f4f4f5;
-  padding: 4px;
+  padding: 3px;
   border-radius: 9999px;
   border: 1.5px solid #e4e4e7;
-  gap: 4px;
+  gap: 3px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .nav-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
+  gap: 6px;
+  padding: 6px 16px;
   border-radius: 9999px;
   font-size: var(--font-xs);
   font-weight: 700;
@@ -81,15 +111,15 @@
 .live-pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   background: #000000;
   border: 1px solid #000000;
   border-radius: 9999px;
-  padding: 7px 16px;
-  font-size: var(--font-xs);
+  padding: 6px 14px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .live-dot {
@@ -102,50 +132,346 @@
 
 /* SECTION 1: THE 5 PRIMARY CORE FACTORS */
 .factors-section {
-  margin-bottom: var(--space-8);
-}
-
-/* LEVEL 1: Spoilage Risk Score Centered Hero in Middle */
-.factor-center-wrapper {
+  margin-bottom: 0;
   display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-bottom: var(--space-6);
+  flex-direction: column;
+  gap: 12px;
 }
 
-.factor-card-center-hero {
-  width: 100%;
-  max-width: 760px;
-  text-align: center;
+/* FLAGSHIP CENTERPIECE SPOILAGE RISK GAUGE HUD (MAIN ATTRACTION) */
+.spoilage-hero-gauge-container {
+  background: #ffffff;
   border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-6);
+  padding: 16px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.10);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.factor-card-center-hero:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.14);
+.gauge-theme-fresh {
+  border: 2px solid #86efac;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
 }
 
-.hero-center-content {
+.gauge-theme-watch {
+  border: 2px solid #fde68a;
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.14), 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.gauge-theme-spoiled {
+  border: 2px solid #fca5a5;
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.16), 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+}
+
+.spoilage-hero-gauge-container:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+}
+
+.gauge-left-hud {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.gauge-dial-box {
+  position: relative;
+  width: 135px;
+  height: 135px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-dial-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.gauge-progress-stroke {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
+}
+
+.gauge-dial-center-text {
+  position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 
-.factor-card-title-center {
-  font-size: var(--font-sm);
+.gauge-dial-number {
+  font-size: 2.75rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: #000000;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+.gauge-dial-unit {
+  font-size: 0.68rem;
   font-weight: 800;
+  color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  margin-top: 3px;
+  letter-spacing: 0.06em;
+}
+
+.gauge-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gauge-badge-row {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.gauge-title-label {
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.gauge-status-pill-fresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1.5px solid #86efac;
+  border-radius: 9999px;
+  padding: 4px 13px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.gauge-status-pill-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1.5px solid #fde68a;
+  border-radius: 9999px;
+  padding: 4px 13px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.gauge-status-pill-spoiled {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1.5px solid #fca5a5;
+  border-radius: 9999px;
+  padding: 4px 13px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.gauge-description-text {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 530px;
+  font-weight: 500;
+}
+
+.gauge-right-vectors {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.gauge-vector-chip {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 145px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.gauge-vector-chip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.gauge-vector-val-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gauge-vector-val-green {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: #059669;
+  line-height: 1;
+}
+
+.gauge-vector-val-red {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: #dc2626;
+  line-height: 1;
+}
+
+.gauge-micro-bar {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.gauge-micro-fill-green {
+  height: 100%;
+  background: #10b981;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.gauge-micro-fill-red {
+  height: 100%;
+  background: #ef4444;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* 2-COLUMN BALANCED FACTORS MID GRID */
+.factors-2col-mid-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* 3-COLUMN COMPACT FACTORS GRID (FALLBACK) */
+.factors-3col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* ROW 3: DEDICATED HORIZONTAL BIO VS THERMAL RISK STRIP */
+.factor-card-horizontal-risks {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-top: 4px solid #059669 !important;
+  border-radius: var(--radius-lg);
+  padding: 12px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: var(--space-2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.factor-card-horizontal-risks:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.07);
+}
+
+.risk-horizontal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.risk-horizontal-cause {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+}
+
+.risk-horizontal-cause strong {
+  font-weight: 800;
+}
+
+.risk-horizontal-bars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.risk-bar-box {
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.risk-bar-box-green {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+}
+
+.risk-bar-box-red {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+}
+
+.risk-bar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-bar-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.risk-bar-val {
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
 }
 
 .risk-metric-hero-big {
@@ -913,13 +1239,200 @@
   color: #000000;
 }
 
+/* ================================================================ */
+/* PAGE 3: ABOUT FRESHTRACE (STACKED FORMULAS & STAT WIDGETS)       */
+/* ================================================================ */
+.about-boundary-container {
+  max-width: min(780px, 60vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.about-header-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-title-large {
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #000000;
+  line-height: 1.1;
+}
+
+.about-title-lead {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  max-width: 680px;
+  line-height: 1.45;
+}
+
+/* Horizontally Longer Formula Cards Stacked Vertically */
+.about-formula-cards-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formula-card-horizontal {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.formula-card-horizontal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.formula-card-emerald {
+  border-left: 5px solid #10b981 !important;
+}
+
+.formula-card-rose {
+  border-left: 5px solid #f43f5e !important;
+}
+
+.formula-card-sky {
+  border-left: 5px solid #0284c7 !important;
+}
+
+.formula-card-left-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 220px;
+}
+
+.formula-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.formula-card-title-text {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.formula-card-badge-emerald {
+  font-size: 0.72rem;
+  color: #059669;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.formula-card-badge-rose {
+  font-size: 0.72rem;
+  color: #e11d48;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.formula-card-badge-sky {
+  font-size: 0.72rem;
+  color: #0284c7;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.formula-box-wide {
+  flex: 1;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  text-align: right;
+}
+
+.formula-box-wide code {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* 4 Colorful Interactive Stat Widgets */
+.about-stat-widgets-4grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-widget-box {
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1.5px solid;
+  transition: transform 0.18s ease;
+}
+
+.stat-widget-box:hover {
+  transform: translateY(-2px);
+}
+
+.stat-widget-emerald {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.stat-widget-rose {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+
+.stat-widget-sky {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.stat-widget-amber {
+  background: #fefce8;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.stat-widget-number {
+  font-size: 1.35rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.stat-widget-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 /* MATHEMATICAL RESPONSIVE SCALING */
 @media (max-width: 1024px) {
-  .factors-mid-grid {
+  .factors-3col-grid {
     grid-template-columns: 1fr;
   }
-  .vector-split-grid {
+  .about-formula-cards-3grid {
     grid-template-columns: 1fr;
+  }
+  .about-stat-widgets-4grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   .curves-grid-2 {
     grid-template-columns: 1fr;
@@ -953,9 +1466,13 @@
   .sensor-grid-4 {
     grid-template-columns: 1fr;
   }
-  .risk-metric-big,
-  .shelf-life-metric {
-    font-size: var(--font-3xl);
+  .spoilage-hero-gauge-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .gauge-right-vectors {
+    width: 100%;
+    justify-content: space-between;
   }
   .interactive-slider-row {
     flex-direction: column;
@@ -971,5 +1488,11 @@
   .telemetry-live-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .about-title-large {
+    font-size: 1.5rem;
+  }
+  .about-stat-widgets-4grid {
+    grid-template-columns: 1fr;
   }
 }
