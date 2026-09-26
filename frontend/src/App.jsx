@@ -30,27 +30,31 @@ import {
   X,
   Database,
   CloudLightning,
-  BarChart3
+  BarChart3,
+  Bell,
+  Mail,
+  Phone,
+  Monitor
 } from 'lucide-react';
 import './App.css';
 
 const getApiBase = () => {
-  if (typeof window === 'undefined') return 'http://13.233.158.144';
+  if (typeof window === 'undefined') return 'http://13.233.158.144:8080';
   if (window.__API_BASE__) return window.__API_BASE__;
   if (import.meta.env.VITE_API_BASE) return import.meta.env.VITE_API_BASE;
   
-  // If running on HTTPS tunnel or domain, keep HTTPS origin to avoid mixed-content blocks
-  if (window.location.protocol === 'https:') {
+  // When running on Cloudflare HTTPS Tunnel, EC2 direct, or same-origin deployment
+  if (
+    window.location.hostname.includes('trycloudflare.com') ||
+    window.location.hostname === '13.233.158.144' ||
+    window.location.port === '8080' ||
+    window.location.port === '80'
+  ) {
     return window.location.origin;
   }
-  
-  // If loaded directly on EC2 instance host
-  if (window.location.hostname === '13.233.158.144' || window.location.hostname.includes('compute.amazonaws.com')) {
-    return window.location.origin;
-  }
-  
-  // For local dev (localhost:5180) and S3 static bucket hosting, route directly to public AWS EC2 API
-  return 'http://13.233.158.144';
+
+  // Fallback for S3 bucket website or local dev server (localhost:5180)
+  return 'http://13.233.158.144:8080';
 };
 
 const API_BASE = getApiBase();
@@ -60,36 +64,165 @@ export default function App() {
   const [foodType, setFoodType] = useState('tomato');
   const [activeTab, setActiveTab] = useState('factors'); // 'factors' | 'telemetry' | 'about'
 
-  // Core Intelligence Values
-  const [riskScore, setRiskScore] = useState(0.18);
-  const [rulHours, setRulHours] = useState(24.5);
-  const [bioRisk, setBioRisk] = useState(0.18);
-  const [thermalRisk, setThermalRisk] = useState(0.12);
-  const [degradationVelocity, setDegradationVelocity] = useState(-0.015);
+  // Core Intelligence Values (Minimum risk floor of 4.5% even in optimal conditions)
+  const [riskScore, setRiskScore] = useState(0.048);
+  const [rulHours, setRulHours] = useState(72.0);
+  const [bioRisk, setBioRisk] = useState(0.048);
+  const [thermalRisk, setThermalRisk] = useState(0.020);
+  const [degradationVelocity, setDegradationVelocity] = useState(-0.002);
 
   // Exact Sensor Metrics
   const [sensor, setSensor] = useState({
-    voc_raw: 31555,
-    nox_raw: 19601,
-    temperature_c: 30.2,
-    humidity_pct: 67.9
+    voc_raw: 31521,
+    nox_raw: 16769,
+    temperature_c: 29.8,
+    humidity_pct: 67.5
   });
 
-  // Rolling History for Curves
-  const [vocHistory, setVocHistory] = useState([
-    31720, 31690, 31660, 31630, 31600, 31580, 31560, 31555
-  ]);
-  const [tempHistory, setTempHistory] = useState([
-    29.4, 29.6, 29.8, 30.0, 30.1, 30.1, 30.2, 30.2
-  ]);
+  // Timestamped Rolling History for Time-Series Curves
+  const [vocHistory, setVocHistory] = useState(() => {
+    const now = new Date();
+    return [31720, 31690, 31660, 31630, 31600, 31580, 31560, 31521].map((v, i) => {
+      const d = new Date(now.getTime() - (7 - i) * 15000);
+      return {
+        value: v,
+        timeStr: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: d
+      };
+    });
+  });
+
+  const [tempHistory, setTempHistory] = useState(() => {
+    const now = new Date();
+    return [29.4, 29.5, 29.6, 29.7, 29.7, 29.8, 29.8, 29.8].map((v, i) => {
+      const d = new Date(now.getTime() - (7 - i) * 15000);
+      return {
+        value: v,
+        timeStr: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: d
+      };
+    });
+  });
+
   const [velocityHistory, setVelocityHistory] = useState([
-    -0.012, -0.013, -0.015, -0.014, -0.016, -0.015, -0.015, -0.015
+    -0.001, -0.001, -0.002, -0.002, -0.002, -0.002, -0.002, -0.002
   ]);
 
   // Live Timestamp & Connection Tracking
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
+
+  // Hover state for interactive time markers on charts
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  // AWS SNS & Browser Notification State
+  const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
+  const [subProtocol, setSubProtocol] = useState('browser'); // 'browser' | 'email' | 'sms'
+  const [subEndpoint, setSubEndpoint] = useState('');
+  const [subLoading, setSubLoading] = useState(false);
+  const [subResult, setSubResult] = useState(null);
+  const [browserNotifPermission, setBrowserNotifPermission] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'unsupported';
+  });
+  const [lastNotifSentAt, setLastNotifSentAt] = useState(0);
+
+  // Request native OS/Browser notification permissions
+  const requestBrowserNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setSubResult({ success: false, message: 'Native browser notifications are not supported by this browser.' });
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setBrowserNotifPermission(permission);
+      if (permission === 'granted') {
+        setSubResult({ success: true, message: '🎉 Browser notifications enabled! You will receive instant desktop alerts whenever Spoilage Risk reaches 80%.' });
+        try {
+          new Notification("FreshTrace · Browser Alerts Active", {
+            body: "Instant desktop alerts connected to FreshTrace-Node-01 (Risk ≥ 80%).",
+            icon: "/favicon.ico"
+          });
+        } catch (e) {}
+      } else if (permission === 'denied') {
+        setSubResult({ success: false, message: 'Notification permission was denied. Please allow notifications in your browser URL bar settings.' });
+      }
+    } catch (err) {
+      setSubResult({ success: false, message: 'Failed to request notification permission.' });
+    }
+  };
+
+  // Dispatch a test desktop notification
+  const sendTestBrowserNotification = () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification("🚨 FreshTrace Critical Alert (Test)", {
+          body: "SIMULATED WARNING: Spoilage risk at 89%! Biochemical VOC threshold exceeded.",
+          icon: "/favicon.ico"
+        });
+        setSubResult({ success: true, message: 'Test notification sent directly to your OS / desktop notification center!' });
+      } catch (e) {
+        setSubResult({ success: false, message: 'Error triggering desktop notification.' });
+      }
+    } else {
+      requestBrowserNotificationPermission();
+    }
+  };
+
+  // Automatically trigger native browser desktop notification whenever Risk >= 80%
+  useEffect(() => {
+    if (riskScore >= 0.80 && browserNotifPermission === 'granted') {
+      const now = Date.now();
+      if (now - lastNotifSentAt > 60000) { // 60s cooldown
+        setLastNotifSentAt(now);
+        try {
+          new Notification(`🚨 CRITICAL SPOILAGE DETECTED: ${Math.round(riskScore * 100)}% RISK`, {
+            body: `FreshTrace Node-01 has detected severe spoilage conditions (${Math.round(riskScore * 100)}% Spoilage Risk). Immediate cold-chain inspection or refrigeration required.`,
+            icon: "/favicon.ico",
+            tag: 'freshtrace-spoilage-alert'
+          });
+        } catch (e) {
+          console.warn("Browser notification trigger notice:", e);
+        }
+      }
+    }
+  }, [riskScore, browserNotifPermission, lastNotifSentAt]);
+
+  // Fetch telemetry history from RDS to populate historical time-series curves
+  const fetchTelemetryHistory = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/devices/${deviceId}/telemetry/history?limit=20`);
+      if (res.ok) {
+        const historyData = await res.json();
+        if (Array.isArray(historyData) && historyData.length > 0) {
+          const vList = historyData.map(item => {
+            const d = item.received_at ? new Date(item.received_at) : new Date();
+            return {
+              value: item.voc_raw,
+              timeStr: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              time: d
+            };
+          });
+          const tList = historyData.map(item => {
+            const d = item.received_at ? new Date(item.received_at) : new Date();
+            return {
+              value: item.temperature_c,
+              timeStr: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              time: d
+            };
+          });
+          setVocHistory(vList);
+          setTempHistory(tList);
+        }
+      }
+    } catch (e) {
+      console.warn("Telemetry history fetch notice:", e);
+    }
+  };
 
   // Fetch live state from backend API (connected to AWS IoT Core + RDS)
   const fetchLiveStatus = async () => {
@@ -106,28 +239,39 @@ export default function App() {
           setIsOnline(elapsed <= 20);
         }
 
+        // Apply minimum risk floor of 4.5%
         if (data.risk) {
-          const overall = data.risk.overall ?? data.spoilage_risk ?? 0.18;
+          const overall = Math.max(0.045, data.risk.overall ?? data.spoilage_risk ?? 0.048);
           setRiskScore(overall);
-          setBioRisk(data.risk.biochemical ?? 0.18);
-          setThermalRisk(data.risk.thermal ?? 0.12);
+          setBioRisk(Math.max(0.045, data.risk.biochemical ?? 0.048));
+          setThermalRisk(Math.max(0.020, data.risk.thermal ?? 0.020));
         }
         if (data.remaining_useful_life) {
-          setRulHours(data.remaining_useful_life.hours ?? 24.5);
+          setRulHours(data.remaining_useful_life.hours ?? 72.0);
         }
         if (data.sensor) {
-          const newTemp = data.sensor.temperature_c ?? 30.2;
-          const newVoc = data.sensor.voc_raw ?? 31555;
-          const newNox = data.sensor.nox_raw ?? 19601;
-          const newHum = data.sensor.humidity_pct ?? 67.9;
+          const newTemp = data.sensor.temperature_c ?? 29.8;
+          const newVoc = data.sensor.voc_raw ?? 31521;
+          const newNox = data.sensor.nox_raw ?? 16769;
+          const newHum = data.sensor.humidity_pct ?? 67.5;
           setSensor({
             voc_raw: newVoc,
             nox_raw: newNox,
             temperature_c: newTemp,
             humidity_pct: newHum
           });
-          setVocHistory(prev => [...prev.slice(-15), newVoc]);
-          setTempHistory(prev => [...prev.slice(-15), newTemp]);
+
+          const curTime = data.last_updated ? new Date(data.last_updated) : new Date();
+          const timeString = curTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          setVocHistory(prev => {
+            const next = [...prev, { value: newVoc, timeStr: timeString, time: curTime }];
+            return next.slice(-20);
+          });
+          setTempHistory(prev => {
+            const next = [...prev, { value: newTemp, timeStr: timeString, time: curTime }];
+            return next.slice(-20);
+          });
         }
         if (data.last_updated) {
           setLastUpdated(new Date(data.last_updated));
@@ -143,8 +287,37 @@ export default function App() {
     }
   };
 
+  // Subscribe to AWS SNS Spoilage Alerts (Risk >= 80%)
+  const handleSubscribeSNS = async (e) => {
+    e?.preventDefault();
+    if (!subEndpoint || !subEndpoint.trim()) return;
+    setSubLoading(true);
+    setSubResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/notifications/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          protocol: subProtocol,
+          endpoint: subEndpoint.trim()
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubResult({ success: true, message: data.message });
+      } else {
+        setSubResult({ success: false, message: data.detail || 'Failed to subscribe to AWS SNS.' });
+      }
+    } catch (err) {
+      setSubResult({ success: false, message: 'Network error communicating with AWS SNS API.' });
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
   // Poll API every 4 seconds and increment elapsed seconds every second
   useEffect(() => {
+    fetchTelemetryHistory();
     fetchLiveStatus();
     const pollInterval = setInterval(fetchLiveStatus, 4000);
     const tickInterval = setInterval(() => {
@@ -236,62 +409,197 @@ export default function App() {
       setVelocityHistory(prev => [...prev.slice(-15), -0.480]);
       setSensor({ voc_raw: 27800, nox_raw: 16200, temperature_c: 32.0, humidity_pct: 79.0 });
       setVocHistory(prev => [...prev.slice(-15), 27800]);
+
+      // Fire AWS SNS Alert to all confirmed cloud subscribers (Email/SMS)
+      fetch(`${API_BASE}/notifications/publish-alert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId, risk_score: 0.89, reason: 'Demo Preset: Spoiled and Hazardous' })
+      }).catch(e => console.warn("AWS SNS publish notice:", e));
     }
     setLastUpdated(new Date());
     setSecondsAgo(0);
   };
 
-  // Mathematically Scaled SVG Sparkline with Dynamic Color Gradients
-  const renderSVGChart = (data, strokeColor = '#10b981', minBound, maxBound) => {
-    if (!data || data.length < 2) return null;
-    const min = minBound ?? (Math.min(...data) * 0.995);
-    const max = maxBound ?? (Math.max(...data) * 1.005);
+  // Mathematically Scaled SVG Sparkline with Dynamic Time-Axes, Grids, and Interactive Tooltips
+  const renderSVGChart = (data, strokeColor = '#10b981', unit = 'ticks', minBound, maxBound, chartId = 'voc') => {
+    if (!data || data.length === 0) return null;
+
+    // Normalize data entries to objects { value, timeStr, time }
+    const items = data.map((d, i) => {
+      if (typeof d === 'object' && d !== null) return d;
+      const t = new Date(Date.now() - (data.length - 1 - i) * 10000);
+      return {
+        value: Number(d),
+        timeStr: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: t
+      };
+    });
+
+    const values = items.map(d => d.value);
+    const min = minBound ?? (Math.min(...values) * 0.995);
+    const max = maxBound ?? (Math.max(...values) * 1.005);
     const range = (max - min) === 0 ? 1 : (max - min);
 
-    const width = 500;
-    const height = 140;
-    const pad = 12;
+    const width = 560;
+    const height = 150;
+    const padX = 24;
+    const padTop = 18;
+    const padBottom = 30; // Dedicated space for formatted timestamps on the X-axis
+    const chartHeight = height - padTop - padBottom;
+    const chartWidth = width - 2 * padX;
 
-    const points = data.map((val, idx) => {
-      const x = pad + (idx / (data.length - 1)) * (width - 2 * pad);
-      const y = height - pad - ((val - min) / range) * (height - 2 * pad);
-      return `${x},${y}`;
-    }).join(' ');
+    const coords = items.map((item, idx) => {
+      const x = items.length === 1 ? padX + chartWidth / 2 : padX + (idx / (items.length - 1)) * chartWidth;
+      const y = padTop + chartHeight - ((item.value - min) / range) * chartHeight;
+      return { x, y, item, idx };
+    });
 
+    const pointsStr = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
     const safeColorId = strokeColor.replace(/[^a-zA-Z0-9]/g, '');
-    const gradId = `chartGrad-${safeColorId}-${data.length}`;
+    const gradId = `chartGrad-${safeColorId}-${chartId}`;
+
+    // Select 3 or 4 timestamp labels across the X axis
+    const labelIndices = [];
+    if (items.length === 1) {
+      labelIndices.push(0);
+    } else if (items.length <= 4) {
+      items.forEach((_, i) => labelIndices.push(i));
+    } else {
+      labelIndices.push(0);
+      labelIndices.push(Math.floor(items.length / 3));
+      labelIndices.push(Math.floor((items.length * 2) / 3));
+      labelIndices.push(items.length - 1);
+    }
+
+    const firstTime = items[0]?.timeStr || '--:--:--';
+    const lastTime = items[items.length - 1]?.timeStr || '--:--:--';
 
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
-          </linearGradient>
-        </defs>
-        <polygon 
-          fill={`url(#${gradId})`} 
-          points={`${pad},${height - pad} ${points} ${width - pad},${height - pad}`} 
-        />
-        <polyline
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={points}
-        />
-        {data.length > 0 && (
-          <circle
-            cx={width - pad}
-            cy={height - pad - ((data[data.length - 1] - min) / range) * (height - 2 * pad)}
-            r="5"
-            fill={strokeColor}
-            stroke="#ffffff"
-            strokeWidth="2.5"
-          />
+      <div className="svg-chart-container" style={{ position: 'relative', width: '100%' }}>
+        <svg 
+          viewBox={`0 0 ${width} ${height}`} 
+          style={{ width: '100%', height: '100%', overflow: 'visible' }}
+          className="metric-timeseries-svg"
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={strokeColor} stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+
+          {/* Background Horizontal Reference Grid Lines */}
+          <line x1={padX} y1={padTop} x2={width - padX} y2={padTop} stroke="#e2e8f0" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1={padX} y1={padTop + chartHeight / 2} x2={width - padX} y2={padTop + chartHeight / 2} stroke="#f1f5f9" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1={padX} y1={padTop + chartHeight} x2={width - padX} y2={padTop + chartHeight} stroke="#cbd5e1" strokeWidth="1.2" />
+
+          {/* Gradient Fill Area */}
+          {coords.length > 1 && (
+            <polygon 
+              fill={`url(#${gradId})`} 
+              points={`${coords[0].x},${padTop + chartHeight} ${pointsStr} ${coords[coords.length - 1].x},${padTop + chartHeight}`} 
+            />
+          )}
+
+          {/* Polyline Trajectory Curve */}
+          {coords.length > 1 && (
+            <polyline
+              fill="none"
+              stroke={strokeColor}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={pointsStr}
+            />
+          )}
+
+          {/* Individual Data Points & Timestamp Tick Marks */}
+          {coords.map((c, i) => {
+            const isHovered = hoveredPoint && hoveredPoint.chartId === chartId && hoveredPoint.idx === i;
+            const isLast = i === coords.length - 1;
+            const showTick = labelIndices.includes(i);
+
+            return (
+              <g key={i}>
+                {/* Vertical time grid tick line */}
+                {showTick && (
+                  <line
+                    x1={c.x}
+                    y1={padTop + chartHeight}
+                    x2={c.x}
+                    y2={padTop + chartHeight + 4}
+                    stroke="#94a3b8"
+                    strokeWidth="1.5"
+                  />
+                )}
+
+                {/* X-Axis Formatted Timestamp Label */}
+                {showTick && (
+                  <text
+                    x={c.x}
+                    y={height - 8}
+                    textAnchor={i === 0 ? 'start' : i === coords.length - 1 ? 'end' : 'middle'}
+                    fill="#64748b"
+                    fontSize="10"
+                    fontFamily="var(--font-mono, monospace)"
+                    fontWeight="600"
+                  >
+                    {c.item.timeStr}
+                  </text>
+                )}
+
+                {/* Interactive Data Point Dot */}
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={isHovered ? 6.5 : isLast ? 5 : 3.5}
+                  fill={isHovered ? '#ffffff' : strokeColor}
+                  stroke={isHovered ? strokeColor : '#ffffff'}
+                  strokeWidth={isHovered ? 3 : 2}
+                  style={{ cursor: 'pointer', transition: 'r 0.15s ease' }}
+                  onMouseEnter={() => setHoveredPoint({ chartId, idx: i, ...c.item, x: c.x, y: c.y, unit })}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Hover Tooltip Overlay showing Value + Exact Timestamp */}
+        {hoveredPoint && hoveredPoint.chartId === chartId && (
+          <div 
+            className="chart-hover-tooltip"
+            style={{
+              position: 'absolute',
+              left: `${(hoveredPoint.x / width) * 100}%`,
+              top: `${Math.max(0, (hoveredPoint.y / height) * 100 - 32)}%`,
+              transform: 'translate(-50%, -100%)',
+              pointerEvents: 'none',
+              zIndex: 10
+            }}
+          >
+            <div className="tooltip-val" style={{ color: strokeColor }}>
+              {typeof hoveredPoint.value === 'number' ? hoveredPoint.value.toLocaleString() : hoveredPoint.value} {hoveredPoint.unit}
+            </div>
+            <div className="tooltip-time">
+              🕒 {hoveredPoint.timeStr}
+            </div>
+          </div>
         )}
-      </svg>
+
+        {/* Timeline Summary Strip below graph */}
+        <div className="chart-timeline-strip">
+          <div className="timeline-strip-item">
+            <span className="timeline-strip-dot" />
+            <span>Timeline Start: <strong>{firstTime}</strong></span>
+          </div>
+          <div className="timeline-strip-item">
+            <span className="timeline-strip-dot active-dot" style={{ backgroundColor: strokeColor }} />
+            <span>Latest Reading: <strong>{lastTime}</strong></span>
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -341,13 +649,48 @@ export default function App() {
             </button>
           </nav>
 
-        <div className="header-status-group">
-          <div className={`live-pill ${isOnline ? 'pill-online' : 'pill-offline'}`}>
-            <span className={`live-dot ${isOnline ? 'dot-online' : 'dot-offline'}`} />
-            <span>{isOnline ? `AWS IoT Core Active · ${deviceId}` : `Sensor Offline · Standby (${deviceId})`}</span>
+          <div className="header-status-group">
+            {/* AWS SNS Notification Trigger & Registration Button */}
+            <button 
+              className="aws-sns-subscribe-btn"
+              onClick={() => setSubscribeModalOpen(true)}
+              title="Configure instant AWS SNS Email/SMS alerts when spoilage risk exceeds 80%"
+            >
+              <Bell size={14} className="bell-icon-pulse" />
+              <span>AWS Alerts (Risk ≥ 80%)</span>
+            </button>
+
+            <div className={`live-pill ${isOnline ? 'pill-online' : 'pill-offline'}`}>
+              <span className={`live-dot ${isOnline ? 'dot-online' : 'dot-offline'}`} />
+              <span>{isOnline ? `AWS IoT Core Active · ${deviceId}` : `Sensor Offline · Standby (${deviceId})`}</span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+
+        {/* TOP CRITICAL AWS ALERT BANNER (Triggers automatically when Risk >= 80%) */}
+        {isSpoiled && (
+          <div className="critical-sns-alert-banner animate-fade-in">
+            <div className="alert-content-group">
+              <div className="alert-icon-wrap">
+                <AlertOctagon size={22} color="#ffffff" className="alert-icon-pulse" />
+              </div>
+              <div className="alert-text-group">
+                <div className="alert-title-main">
+                  🚨 CRITICAL SPOILAGE DETECTED: {Math.round(riskScore * 100)}% RISK LEVEL (≥ 80% Threshold Exceeded)
+                </div>
+                <div className="alert-subtitle-detail">
+                  Automated high-priority alert dispatched via Amazon SNS to cloud subscribers. Immediate cold-chain inspection or refrigeration required.
+                </div>
+              </div>
+            </div>
+            <button 
+              className="alert-action-btn"
+              onClick={() => setSubscribeModalOpen(true)}
+            >
+              Manage Alert Recipients
+            </button>
+          </div>
+        )}
 
       {/* ================================================================ */}
       {/* PAGE 1: CORE SPOILAGE FACTORS (DEDICATED VIEW)                   */}
@@ -653,7 +996,7 @@ export default function App() {
                 <div className="curve-card-top">
                   <div>
                     <div className="curve-main-title">VOC Gas Emission Curve</div>
-                    <div className="curve-subtitle-desc">Decomposition gas release over time</div>
+                    <div className="curve-subtitle-desc">Atmospheric rotting gas release with real-time timestamps</div>
                   </div>
                   <div className="curve-badge curve-badge-green">
                     <span className="badge-pulse-green" />
@@ -661,7 +1004,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="chart-svg-box">
-                  {renderSVGChart(vocHistory, '#10b981')}
+                  {renderSVGChart(vocHistory, '#10b981', 'ticks', undefined, undefined, 'voc')}
                 </div>
               </div>
 
@@ -670,7 +1013,7 @@ export default function App() {
                 <div className="curve-card-top">
                   <div>
                     <div className="curve-main-title">Temperature Abuse Timeline</div>
-                    <div className="curve-subtitle-desc">Continuous cold-chain thermal stability</div>
+                    <div className="curve-subtitle-desc">Continuous cold-chain thermal stability with timestamped tracking</div>
                   </div>
                   <div className="curve-badge curve-badge-red">
                     <span className="badge-pulse-red" />
@@ -678,7 +1021,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="chart-svg-box">
-                  {renderSVGChart(tempHistory, '#ef4444', 15, 45)}
+                  {renderSVGChart(tempHistory, '#ef4444', '°C', 15, 45, 'temp')}
                 </div>
               </div>
             </div>
@@ -726,7 +1069,7 @@ export default function App() {
                   <span className="formula-card-badge-emerald">Sensirion SGP41 · VOC/NOx</span>
                 </div>
                 <div className="formula-box-wide">
-                  <code>Risk_bio = clamp((VOC_0 - VOC_t) / &Delta;_s, 0, 1)</code>
+                  <code>Risk_bio = clamp((VOC_0 - VOC_t) / &Delta;_s, 0.045, 1.0)</code>
                 </div>
               </div>
 
@@ -754,7 +1097,7 @@ export default function App() {
                   <span className="formula-card-badge-sky">&plusmn;15% Confidence Countdown</span>
                 </div>
                 <div className="formula-box-wide">
-                  <code>RUL = (0.80 - Risk) / (|Velocity| &middot; c)</code>
+                  <code>RUL = (0.85 - Risk) / (|Velocity| &middot; c)</code>
                 </div>
               </div>
             </div>
@@ -782,6 +1125,158 @@ export default function App() {
         </div>
       )}
       </div>
+
+      {/* ================================================================ */}
+      {/* AWS SNS SPOILAGE ALERTS SUBSCRIPTION MODAL (RISK >= 80%)         */}
+      {/* ================================================================ */}
+      {subscribeModalOpen && (
+        <div className="modal-backdrop-overlay animate-fade-in" onClick={() => setSubscribeModalOpen(false)}>
+          <div className="sns-modal-card animate-scale-up" onClick={e => e.stopPropagation()}>
+            <div className="sns-modal-header">
+              <div className="sns-modal-title-group">
+                <div className="sns-modal-icon-badge">
+                  <Bell size={20} color="#d97706" />
+                </div>
+                <div>
+                  <h3 className="sns-modal-title">AWS Spoilage Alert Dispatch</h3>
+                  <p className="sns-modal-subtitle">Instant automated notification whenever Spoilage Risk reaches 80%</p>
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setSubscribeModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="sns-modal-body">
+              <div className="sns-info-callout">
+                <ShieldCheck size={16} color="#059669" />
+                <span>Automated dispatch system wired to <strong>AWS Cloud & Amazon SNS</strong> in <code>ap-south-1</code>.</span>
+              </div>
+
+              <div className="sns-subscribe-form">
+                <label className="sns-form-label">Select Alert Channel</label>
+                <div className="sns-protocol-selector-3">
+                  <button
+                    type="button"
+                    className={`protocol-btn ${subProtocol === 'browser' ? 'active-protocol' : ''}`}
+                    onClick={() => { setSubProtocol('browser'); setSubResult(null); }}
+                  >
+                    <Monitor size={15} />
+                    <span>Browser Desktop Push</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`protocol-btn ${subProtocol === 'email' ? 'active-protocol' : ''}`}
+                    onClick={() => { setSubProtocol('email'); setSubResult(null); }}
+                  >
+                    <Mail size={15} />
+                    <span>Email (AWS SNS)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`protocol-btn ${subProtocol === 'sms' ? 'active-protocol' : ''}`}
+                    onClick={() => { setSubProtocol('sms'); setSubResult(null); }}
+                  >
+                    <Phone size={15} />
+                    <span>SMS (AWS SNS)</span>
+                  </button>
+                </div>
+
+                {/* BROWSER DESKTOP NOTIFICATION SECTION */}
+                {subProtocol === 'browser' && (
+                  <div className="browser-notif-box animate-fade-in" style={{ marginTop: '14px' }}>
+                    <div className="browser-notif-status-row">
+                      <span className="sns-form-label" style={{ margin: 0 }}>Browser Notification Status:</span>
+                      <span className={`status-badge-pill ${browserNotifPermission === 'granted' ? 'badge-granted' : browserNotifPermission === 'denied' ? 'badge-denied' : 'badge-pending'}`}>
+                        {browserNotifPermission === 'granted' ? '✅ Active & Allowed' : browserNotifPermission === 'denied' ? '❌ Blocked by Browser' : '⚠️ Permission Required'}
+                      </span>
+                    </div>
+
+                    <p className="browser-notif-explainer">
+                      Receive instant, zero-latency desktop and mobile popups directly from your operating system whenever Spoilage Risk reaches or exceeds <strong>80%</strong>. No email or phone entry required.
+                    </p>
+
+                    <div className="browser-notif-action-row">
+                      {browserNotifPermission !== 'granted' ? (
+                        <button
+                          type="button"
+                          className="btn-enable-browser-notif"
+                          onClick={requestBrowserNotificationPermission}
+                        >
+                          <Bell size={15} />
+                          <span>Enable Browser Desktop Notifications</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-test-browser-notif"
+                          onClick={sendTestBrowserNotification}
+                        >
+                          <Bell size={15} />
+                          <span>Send Test Desktop Alert</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* EMAIL OR SMS FORM SECTION */}
+                {(subProtocol === 'email' || subProtocol === 'sms') && (
+                  <form onSubmit={handleSubscribeSNS} className="animate-fade-in" style={{ marginTop: '14px' }}>
+                    <label className="sns-form-label">
+                      {subProtocol === 'email' ? 'Recipient Email Address' : 'Recipient Phone Number (with Country Code)'}
+                    </label>
+                    <input
+                      type={subProtocol === 'email' ? 'email' : 'tel'}
+                      className="sns-endpoint-input"
+                      placeholder={subProtocol === 'email' ? 'e.g. manager@coldchain.com' : 'e.g. +919876543210'}
+                      value={subEndpoint}
+                      onChange={e => setSubEndpoint(e.target.value)}
+                      required
+                    />
+
+                    <div className="sns-modal-actions">
+                      <button
+                        type="button"
+                        className="modal-cancel-btn"
+                        onClick={() => setSubscribeModalOpen(false)}
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="submit"
+                        className="modal-submit-btn"
+                        disabled={subLoading || !subEndpoint.trim()}
+                      >
+                        {subLoading ? 'Registering with AWS...' : 'Subscribe to AWS Alerts'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {subResult && (
+                  <div className={`sns-result-banner ${subResult.success ? 'result-success' : 'result-error'}`}>
+                    {subResult.success ? <CheckCircle2 size={16} color="#059669" /> : <AlertTriangle size={16} color="#dc2626" />}
+                    <span>{subResult.message}</span>
+                  </div>
+                )}
+
+                {subProtocol === 'browser' && (
+                  <div className="sns-modal-actions" style={{ marginTop: '18px' }}>
+                    <button
+                      type="button"
+                      className="modal-cancel-btn"
+                      onClick={() => setSubscribeModalOpen(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

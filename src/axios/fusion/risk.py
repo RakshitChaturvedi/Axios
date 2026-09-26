@@ -2,8 +2,8 @@ from typing import Dict
 
 class RiskFusion:
     def fuse(self, bio_risk: float, thermal_risk: float) -> Dict:
-        # Conservative approach: overall risk is the maximum of the two
-        overall_risk = max(bio_risk, thermal_risk)
+        # Overall risk with minimum baseline floor 0.045 (4.5% even in pristine conditions)
+        overall_risk = min(1.0, max(0.045, max(bio_risk, thermal_risk)))
         
         # Determine dominant risk state
         if overall_risk < 0.20:
