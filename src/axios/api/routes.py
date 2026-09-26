@@ -106,19 +106,19 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
     # Otherwise query the latest snapshot from DB
     session_record = db.query(SessionModel).filter_by(device_id=device_id).order_by(SessionModel.started_at.desc()).first()
     if not session_record:
-        # Default empty state for known device
+        # Default empty state for known device with 4.5% minimum floor
         return {
             "device_id": device_id,
             "is_online": False,
             "connection_state": "OFFLINE_STANDBY",
             "seconds_since_last_packet": 999999.0,
-            "food_type": "paneer",
+            "food_type": "tomato",
             "state": "STABLE",
-            "spoilage_risk": 0.0,
+            "spoilage_risk": 0.045,
             "dominant_risk": "LOW_RISK",
-            "risk": {"biochemical": 0.0, "thermal": 0.0, "overall": 0.0, "dominant": "LOW_RISK"},
+            "risk": {"biochemical": 0.045, "thermal": 0.0, "overall": 0.045, "dominant": "LOW_RISK"},
             "remaining_useful_life": {"hours": 72.0, "lower": 61.2, "upper": 72.0},
-            "sensor": {"temperature_c": 29.69, "humidity_pct": 68.04, "voc_raw": 249, "nox_raw": 0},
+            "sensor": {"temperature_c": 29.69, "humidity_pct": 68.04, "voc_raw": 31521, "nox_raw": 16769},
             "last_updated": datetime.utcnow().isoformat() + "Z"
         }
 
@@ -127,6 +127,7 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
 
     ts = latest_snapshot.timestamp if latest_snapshot else (latest_telemetry.timestamp if latest_telemetry else None)
     is_online, elapsed = check_device_online(ts)
+    calc_risk = max(0.045, latest_snapshot.overall_risk) if latest_snapshot else 0.045
 
     return {
         "device_id": device_id,
@@ -135,13 +136,13 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
         "seconds_since_last_packet": round(elapsed, 1),
         "food_type": session_record.food_type,
         "state": latest_snapshot.spoilage_state if latest_snapshot else "STABLE",
-        "spoilage_risk": latest_snapshot.overall_risk if latest_snapshot else 0.0,
-        "dominant_risk": "BIOCHEMICAL_DOMINANT" if (latest_snapshot and latest_snapshot.overall_risk > 0.3) else "LOW_RISK",
+        "spoilage_risk": round(calc_risk, 3),
+        "dominant_risk": "BIOCHEMICAL_DOMINANT" if (calc_risk > 0.3) else "LOW_RISK",
         "risk": {
-            "biochemical": latest_snapshot.overall_risk if latest_snapshot else 0.0,
+            "biochemical": round(calc_risk, 3),
             "thermal": 0.0,
-            "overall": latest_snapshot.overall_risk if latest_snapshot else 0.0,
-            "dominant": "LOW_RISK"
+            "overall": round(calc_risk, 3),
+            "dominant": "BIOCHEMICAL_DOMINANT" if (calc_risk > 0.3) else "LOW_RISK"
         },
         "remaining_useful_life": {
             "hours": latest_snapshot.rul_hours if latest_snapshot else 72.0,
@@ -156,6 +157,75 @@ def get_device_status(device_id: str, db: Session = Depends(get_db)):
         },
         "last_updated": ts if ts else datetime.utcnow().isoformat() + "Z"
     }
+
+class SubscriptionPayload(BaseModel):
+    protocol: str = "email" # "email" or "sms"
+    endpoint: str          # Email address or phone number in E.164 format
+
+@app.post("/notifications/subscribe")
+def subscribe_sns_alerts(payload: SubscriptionPayload):
+    """Subscribes an email or phone number to the AWS SNS AxiosSpoilageAlerts topic."""
+    import os, boto3
+    topic_arn = os.getenv("AWS_SNS_TOPIC_ARN")
+    if not topic_arn:
+        raise HTTPException(status_code=500, detail="AWS SNS Topic not configured.")
+    try:
+        sns = boto3.client(
+            "sns",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_REGION", "ap-south-1")
+        )
+        res = sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol=payload.protocol.lower(),
+            Endpoint=payload.endpoint.strip()
+        )
+        sub_arn = res.get("SubscriptionArn", "pending confirmation")
+        return {
+            "status": "success",
+            "subscription_arn": sub_arn,
+            "message": f"Successfully registered {payload.endpoint} with AWS SNS Spoilage Alerts. A confirmation message has been dispatched via AWS."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"AWS SNS Subscription error: {str(e)}")
+
+class AlertPublishPayload(BaseModel):
+    device_id: str = "FreshTrace-Node-01"
+    risk_score: float = 0.97
+    reason: Optional[str] = "Critical Spoilage Alert"
+
+@app.post("/notifications/publish-alert")
+def trigger_alert_publish(payload: AlertPublishPayload):
+    """Manually or programmatically triggers an immediate AWS SNS Spoilage Alert."""
+    import os, boto3, json
+    topic_arn = os.getenv("AWS_SNS_TOPIC_ARN")
+    if not topic_arn:
+        raise HTTPException(status_code=500, detail="AWS SNS Topic not configured.")
+    try:
+        sns = boto3.client(
+            "sns",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_REGION", "ap-south-1")
+        )
+        risk_pct = round(payload.risk_score * 100, 1)
+        msg_body = {
+            "alert": "CRITICAL_SPOILAGE_RISK_THRESHOLD_EXCEEDED",
+            "device_id": payload.device_id,
+            "risk_percentage": f"{risk_pct}%",
+            "status": "SPOILAGE_ONSET",
+            "message": f"🚨 EMERGENCY: Spoilage risk reached {risk_pct}%! Produce has exceeded safe consumption limits.",
+            "action_required": "Inspect refrigeration unit and isolate spoiled inventory immediately."
+        }
+        res = sns.publish(
+            TopicArn=topic_arn,
+            Subject=f"🚨 ALERT: FreshTrace Critical Spoilage Risk ({risk_pct}%) on {payload.device_id}",
+            Message=json.dumps(msg_body, indent=2)
+        )
+        return {"status": "success", "message_id": res.get("MessageId")}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to publish SNS alert: {str(e)}")
 
 @app.get("/devices/{device_id}/events")
 def get_device_events(device_id: str, db: Session = Depends(get_db)):

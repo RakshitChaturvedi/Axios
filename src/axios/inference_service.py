@@ -40,6 +40,7 @@ class InferenceEngineService:
         self.sns = boto3.client("sns", aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY, region_name=REGION) if SNS_TOPIC_ARN else None
         
         self.last_known_state = {}
+        self.last_alert_timestamps = {}
         print("[InferenceService] Initialized and connected to AWS SQS & SNS.")
 
     def process_telemetry_payload(self, payload: dict) -> dict:
@@ -86,8 +87,8 @@ class InferenceEngineService:
         # 5. Persist to RDS Database (Hot State & Evidence Ledger)
         self._persist_to_db(raw, result, events)
 
-        # 6. Publish threshold alerts to SNS if SPOILAGE_ONSET detected
-        if onset["current_state"] == "SPOILAGE_ONSET":
+        # 6. Publish threshold alerts to SNS if Risk >= 80% or SPOILAGE_ONSET detected
+        if fusion["overall_risk"] >= 0.80 or onset["current_state"] == "SPOILAGE_ONSET":
             self._publish_sns_alert(result)
 
         self.last_known_state[raw.device_id] = result
@@ -148,22 +149,37 @@ class InferenceEngineService:
     def _publish_sns_alert(self, state):
         if not self.sns or not SNS_TOPIC_ARN:
             return
+        device_id = state.get("device_id", "default")
+        now_ts = time.time()
+        last_alert = self.last_alert_timestamps.get(device_id, 0)
+        # Cooldown: 120 seconds between alerts per device to prevent flooding
+        if now_ts - last_alert < 120:
+            return
+        self.last_alert_timestamps[device_id] = now_ts
         try:
+            risk_pct = round(state["overall_risk"] * 100, 1)
             message = {
-                "alert": "CRITICAL_SPOILAGE_ONSET_DETECTED",
+                "alert": "AWS_SPOILAGE_RISK_THRESHOLD_EXCEEDED",
                 "device_id": state["device_id"],
                 "food_type": state["food_type"],
                 "timestamp": state["timestamp"],
-                "overall_risk": state["overall_risk"],
-                "rul_hours": state["rul_hours"],
-                "message": f"Spoilage onset confirmed for {state['food_type']} on {state['device_id']}. Immediate inspection or refrigeration required."
+                "overall_risk_percent": f"{risk_pct}%",
+                "dominant_risk": state.get("dominant_risk", "BIOCHEMICAL_DOMINANT"),
+                "state": state.get("state", "SPOILAGE_ONSET"),
+                "remaining_useful_life_hours": f"{state.get('rul_hours', 0.0)}h",
+                "sensor_telemetry": {
+                    "voc_raw_ticks": state.get("voc_raw"),
+                    "temperature_c": state.get("temperature_c"),
+                    "humidity_pct": state.get("humidity_pct")
+                },
+                "recommended_action": f"CRITICAL: Spoilage risk reached {risk_pct}% (>= 80% threshold). Immediate refrigeration or disposal required."
             }
             self.sns.publish(
                 TopicArn=SNS_TOPIC_ARN,
-                Subject=f"ALERT: Spoilage Onset on {state['device_id']}",
+                Subject=f"🚨 ALERT: FreshTrace High Spoilage Risk ({risk_pct}%) on {state['device_id']}",
                 Message=json.dumps(message, indent=2)
             )
-            print(f"[SNS ALERT SENT] Spoilage onset published to {SNS_TOPIC_ARN}")
+            print(f"[SNS ALERT SENT] Spoilage risk ({risk_pct}%) published to AWS SNS: {SNS_TOPIC_ARN}")
         except Exception as e:
             print(f"[SNS ERROR] Failed to publish alert: {e}")
 

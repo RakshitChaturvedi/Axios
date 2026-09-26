@@ -54,6 +54,7 @@ commands = [
     "tar -xzf /tmp/axios-backend.tar.gz -C /opt/axios",
     "source /opt/axios/venv/bin/activate && pip install -r /opt/axios/requirements.txt",
     "systemctl restart axios-api",
+    "systemctl restart axios-inference",
     # Setup cloudflared systemd service
     """cat << 'EOF' > /etc/systemd/system/axios-tunnel.service
 [Unit]

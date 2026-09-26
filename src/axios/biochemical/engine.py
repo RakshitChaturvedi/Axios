@@ -3,10 +3,11 @@ from axios.contracts.processed import ProcessedReading
 
 class BiochemicalEngine:
     def __init__(self):
-        # Configurable weights for deterministic scoring[cite: 2]
-        self.w_voc_dev = 5.0   # Weight for total VOC deviation
-        self.w_nox_dev = 2.0   # Weight for NOx deviation
-        self.w_voc_vel = 1.0   # Weight for degradation speed
+        # Calibrated weights for SGP41 produce spoilage dynamics
+        # Full rot typically causes a ~15-20% drop in VOC resistance (delta_voc >= 0.15 -> risk >= 90%)
+        self.w_voc_dev = 6.0    # Scale factor for VOC relative resistance drop
+        self.w_nox_dev = 0.5    # Scale factor for NOx secondary deviation
+        self.w_voc_vel = 0.05   # Scale factor for hourly degradation velocity trend
 
     def calculate_risk(self, reading: ProcessedReading) -> Dict[str, float]:
         if not reading.baseline_established:
@@ -17,26 +18,35 @@ class BiochemicalEngine:
                 "degradation_velocity": 0.0
             }
 
-        # SGP41 VOC ticks drop as VOCs increase. 
-        # A negative relative change means higher gas presence.
-        voc_signal = max(0.0, -reading.voc_relative_change) * self.w_voc_dev
+        # SGP41 VOC ticks drop as reducing VOC gases increase (rotting)
+        # reading.voc_relative_change = (voc_filtered - baseline) / baseline
+        # A negative relative change means higher volatile presence.
+        delta_voc = max(0.0, -reading.voc_relative_change)
+        voc_signal = min(1.0, delta_voc * self.w_voc_dev)
         
-        # NOx ticks can fluctuate in either direction depending on the specific gas mix
-        nox_signal = abs(reading.nox_relative_change) * self.w_nox_dev
+        # NOx ticks deviation contribution
+        delta_nox = abs(reading.nox_relative_change)
+        nox_signal = min(0.2, delta_nox * self.w_nox_dev)
         
-        # Negative velocity means the VOC resistance is dropping rapidly (spoilage accelerating)
-        voc_vel_risk = max(0.0, -reading.voc_velocity) * self.w_voc_vel
-        degradation_velocity = voc_vel_risk 
+        # Negative velocity means the VOC resistance is actively dropping (spoilage accelerating)
+        # reading.voc_velocity is in raw ticks/second. Normalize by baseline to obtain fractional change per second.
+        baseline = reading.raw.voc_raw if (reading.raw and reading.raw.voc_raw > 1000) else 31800.0
+        frac_vel_sec = max(0.0, -reading.voc_velocity) / baseline
+        frac_vel_hour = frac_vel_sec * 3600.0
 
-        # Compute multi-signal biochemical score[cite: 1]
-        raw_score = voc_signal + nox_signal + degradation_velocity
+        # Velocity provides trend acceleration (capped at 10% to prevent instantaneous noise saturation)
+        voc_vel_risk = min(0.10, frac_vel_hour * self.w_voc_vel)
+        degradation_velocity = frac_vel_sec
+
+        # Compute multi-signal biochemical score
+        raw_score = voc_signal + nox_signal + voc_vel_risk
         
-        # Clamp between 0.0 (fresh) and 1.0 (maximum risk)
-        risk_score = min(1.0, max(0.0, raw_score))
+        # Clamp between minimum baseline floor of 0.045 (4.5% inherent biological baseline) and 1.0 (maximum risk)
+        risk_score = min(1.0, max(0.045, raw_score))
 
         return {
             "biochemical_risk": round(risk_score, 4),
             "voc_signal": round(voc_signal, 4),
             "nox_signal": round(nox_signal, 4),
-            "degradation_velocity": round(degradation_velocity, 4)
+            "degradation_velocity": round(degradation_velocity, 6)
         }

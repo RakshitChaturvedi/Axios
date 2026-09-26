@@ -10,7 +10,7 @@
 
 [PROJECT_IDENTIFICATION]
 Name: FreshTrace (Axios)
-Repository: https://github.com/RakshitChaturvedi/Axios
+Repository: https://github.com/RakshitChaturvedi/freshtrace
 Active Branch: develop (feature/aws-deployment-and-ui)
 Description: Real-time biochemical food spoilage intelligence, dynamic shelf-life estimation, and cold-chain audit evidence platform powered by AWS native services.
 
